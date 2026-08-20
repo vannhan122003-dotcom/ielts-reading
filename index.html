@@ -351,6 +351,11 @@
                     <textarea id="input-1" placeholder="Paste passage 1 and its questions here&#x2026;"></textarea>
                 </div>
                 <div class="field-group">
+                    <div class="field-label"><i class="fa-solid fa-key"></i> Passage 1 &mdash; Answer Key + Explanations <span class="opt-chip">optional</span></div>
+                    <div class="field-hint">Paste a verified answer key, with or without explanations built in &mdash; plain (<b>1-TRUE, 2-B</b>) or with reasoning (<b>1-TRUE: the text says&hellip;</b>). Either way, the AI skips solving and only formats. (Dán đáp án đã kiểm tra, có thể kèm giải thích ngay trong ô này &mdash; AI sẽ không tự giải nữa.)</div>
+                    <textarea id="answers-1" placeholder="1-TRUE: because... 2-FALSE: because... or just 1-TRUE, 2-FALSE, 3-B" style="height:150px;"></textarea>
+                </div>
+                <div class="field-group">
                     <div class="field-label"><i class="fa-solid fa-image"></i> Hình minh hoạ (nếu có)</div>
                     <div class="img-attach">
                         <button type="button" class="img-pick" onclick="pickImg(1)"><i class="fa-solid fa-upload"></i> Chọn ảnh</button>
@@ -377,6 +382,10 @@
                     <textarea id="input-2" placeholder="Paste passage 2 and its questions here&#x2026;"></textarea>
                 </div>
                 <div class="field-group">
+                    <div class="field-label"><i class="fa-solid fa-key"></i> Passage 2 &mdash; Answer Key + Explanations <span class="opt-chip">optional</span></div>
+                    <textarea id="answers-2" placeholder="14-x: because... 15-ii: because... or just 14-x, 15-ii, 16-viii" style="height:150px;"></textarea>
+                </div>
+                <div class="field-group">
                     <div class="field-label"><i class="fa-solid fa-image"></i> Hình minh hoạ (nếu có)</div>
                     <div class="img-attach">
                         <button type="button" class="img-pick" onclick="pickImg(2)"><i class="fa-solid fa-upload"></i> Chọn ảnh</button>
@@ -401,6 +410,10 @@
                 <div class="field-group">
                     <div class="field-label" id="inlabel-3"><i class="fa-solid fa-file-lines"></i> Passage 3 &mdash; Text + Questions</div>
                     <textarea id="input-3" placeholder="Paste passage 3 and its questions here&#x2026;"></textarea>
+                </div>
+                <div class="field-group">
+                    <div class="field-label"><i class="fa-solid fa-key"></i> Passage 3 &mdash; Answer Key + Explanations <span class="opt-chip">optional</span></div>
+                    <textarea id="answers-3" placeholder="27-B: because... 28-C: because... or just 27-B, 28-C, 29-D" style="height:150px;"></textarea>
                 </div>
                 <div class="field-group">
                     <div class="field-label"><i class="fa-solid fa-image"></i> Hình minh hoạ (nếu có)</div>
@@ -1139,6 +1152,87 @@
         return { questions: html, answers: newAns, explanations: newExp, count: order.length };
     }
 
+    // ---- Manual answer-key / explanation paste support ---------------------
+    // Lets a teacher paste a pre-verified answer key (and optionally
+    // explanations, e.g. drafted by a local model) so the API's job on that
+    // passage shrinks to pure formatting: no solving, and no explanation
+    // writing if explanations were supplied too. Parsing is deterministic
+    // (no AI call, no cost) and tolerant of the exact template this tool's
+    // own exported answer-key text uses, e.g.:
+    //   **Passage 1 (Questions 1-13):** 1-FALSE, 2-TRUE, 3-iii, 9-acidic
+    // The leading "Passage N (...):" label, if present, is simply ignored —
+    // parsing only looks for "<number> - <answer>" pairs.
+    //
+    // Returns an ORDERED array of answer strings (sorted by the number given
+    // in the pasted text), not an object keyed by that number — because this
+    // tool's own renumber() step re-keys everything by ORDER OF APPEARANCE
+    // in the generated HTML, not by the literal digits typed here. So all
+    // that matters is getting the SEQUENCE right, which this preserves.
+    function parseAnswerKeyText(text) {
+        text = String(text || '');
+        // Strip a leading "Passage N (Questions X-Y):" style header if present —
+        // otherwise the "X-Y" question-range itself looks like a valid
+        // "number-answer" pair to the regex below and corrupts the first entry.
+        text = text.replace(/^[\s\S]*?\(\s*Questions?[^)]*\)\s*:?\**\s*/i, '');
+        var pairRe = /(\d+)\s*-\s*([^,\n]+?)(?=\s*(?:,|\n)\s*\d+\s*-|\s*$)/g;
+        var pairs = [], m;
+        while ((m = pairRe.exec(text)) !== null) {
+            var ans = m[2].trim().replace(/\*+$/, '').trim();
+            if (ans) pairs.push({ num: parseInt(m[1], 10), ans: ans });
+        }
+        pairs.sort(function(a, b) { return a.num - b.num; });
+        return pairs.map(function(p) { return p.ans; });
+    }
+
+    // Combined-format parser: understands "N-answer: explanation" pasted as
+    // ONE block (e.g. "1-TRUE: The text states...", "9-Cretaceous-Paleogene:
+    // Taken directly from..."), which is the natural shape an answer key
+    // with reasoning already reads in. Falls back to the plain "N-answer"
+    // format (no explanations) when no colon-delimited entries are found, so
+    // both paste styles work in the same box without the teacher needing to
+    // pick a format or split anything by hand.
+    function parseAnswerKeyCombined(text) {
+        text = String(text || '');
+        text = text.replace(/^[\s\S]*?\(\s*Questions?[^)]*\)\s*:?\**\s*/i, '');
+
+        var starts = [], startRe = /(\d+)\s*-\s*([^:\n]+?)\s*:\s*/g, m;
+        while ((m = startRe.exec(text)) !== null) {
+            starts.push({ num: parseInt(m[1], 10), ans: m[2].trim(), end: startRe.lastIndex, at: m.index });
+        }
+
+        if (starts.length >= 2) {
+            var entries = starts.map(function(s, i) {
+                var next = starts[i + 1];
+                var exp = text.slice(s.end, next ? next.at : text.length)
+                              .trim().replace(/^[,;]\s*/, '').replace(/\*+$/, '').trim();
+                return { num: s.num, ans: s.ans.replace(/\*+$/, '').trim(), exp: exp };
+            });
+            entries.sort(function(a, b) { return a.num - b.num; });
+            return {
+                answers:      entries.map(function(p) { return p.ans; }),
+                explanations: entries.map(function(p) { return p.exp; })
+            };
+        }
+
+        var plain = parseAnswerKeyText(text);
+        return { answers: plain, explanations: plain.map(function() { return ''; }) };
+    }
+
+    // Builds the {qN: [answer]} / {qN: "text"} objects using the SAME
+    // sequential id scheme (q<start+i>) the prompt instructs the model to
+    // use for its <input>/<select> "name" attributes when known answers are
+    // supplied — see the "KNOWN ANSWERS" branch in generatePassage(). Because
+    // renumber() later re-keys everything by order of appearance in the
+    // HTML anyway, this only needs to match that same order, not any
+    // particular literal number.
+    function buildFromOrderedList(startNum, orderedList, wrapInArray) {
+        var out = {};
+        for (var i = 0; i < orderedList.length; i++) {
+            out['q' + (startNum + i)] = wrapInArray ? [orderedList[i]] : orderedList[i];
+        }
+        return out;
+    }
+
     // Safety net for T/F/NG and Y/N/NG. If the model renders one as a text box,
     // a student typing "T" or "NG" can be marked wrong on a technicality, so any
     // such text input is converted to a dropdown with exact full-word values.
@@ -1399,7 +1493,8 @@
                         explanations: qs.explanations
                     };
                 } else {
-                    data = await generatePassage(level, blocks[p].body, nextNum);
+                    var knownAnsRaw = document.getElementById('answers-' + (p + 1)) ? document.getElementById('answers-' + (p + 1)).value : '';
+                    data = await generatePassage(level, blocks[p].body, nextNum, knownAnsRaw);
                 }
 
                 var fixed = renumber(data.questions, data.answers, data.explanations, nextNum);
@@ -1451,26 +1546,64 @@
         }
     }
 
-    async function generatePassage(level, input, startNum) {
+    async function generatePassage(level, input, startNum, knownAnsRaw) {
         var diffMap = {
             pre:  'Simplify the PASSAGE vocabulary and sentence structures by ~25% for Pre-IELTS learners (A1\u2013A2). Use common synonyms and shorter sentences. ALSO simplify the wording of the QUESTIONS and any multiple-choice OPTIONS by the same ~25% \u2014 replace difficult or academic words in the question text with common, everyday vocabulary and use shorter, more direct phrasing. Do NOT change what each question is asking or which answer is correct \u2014 only simplify the language used to express it.',
             fund: 'Simplify the PASSAGE lightly (~15%) for intermediate learners (B1\u2013B2). Keep most vocabulary but replace the most obscure academic words. ALSO lightly simplify the wording of the QUESTIONS and any multiple-choice OPTIONS by ~15% \u2014 replace the most obscure or academic words in the question text with more common alternatives, while keeping sentence structure, meaning, and the correct answer unchanged.',
             core: 'Preserve the PASSAGE exactly as written \u2014 original vocabulary, sentence structure, and academic register. Keep the QUESTIONS and their wording exactly as given in the input, unchanged.'
         };
 
-        var prompt = 'You are an expert IELTS Test Architect with deep knowledge of IELTS reading question types. Process the reading test below with PERFECT ACCURACY.\n\nINPUT TEXT:\n"""\n' + input + '\n"""\n\nINSTRUCTIONS:\n1. Separate the PASSAGE from the QUESTIONS.\n2. ' + diffMap[level] + '\n3. Format the passage as HTML using <p> tags per paragraph. Add a bold label <b>A.</b>, <b>B.</b>, etc. at the start of each paragraph.\n4. Format the questions as clean HTML. Use <input type="text" name="q1"> (q1, q2, q3\u2026 in order) for fill-in-the-blank/short-answer/completion. Use radio inputs for standard multiple choice (A/B/C/D).\n4b. MATCHING QUESTION TYPES \u2014 this covers Matching Headings, Matching Information (which paragraph), Matching Features, and Matching Sentence Endings. For EVERY matching question, you MUST use a <select> dropdown, NEVER a text input or radio. Rules:\n   - First, render the shared list of options ONCE as a reference bank above the questions, e.g. <div class="opt-bank"><b>List of Headings</b><br>i. Heading text<br>ii. Heading text<br>\u2026</div>. Use the IDENTIFIER actually given in the input (roman numerals i, ii, iii for headings; letters A, B, C for paragraphs/features/endings).\n   - Then render each question as: <select name="qN"><option value="">\u2014 Choose \u2014</option><option value="ii">ii</option><option value="iii">iii</option>\u2026</select>. The <option> value MUST be ONLY the identifier (the roman numeral or letter), not the full text.\n   - Include ALL available options in every dropdown (including distractors that are not used as answers).\n4d. TRUE/FALSE/NOT GIVEN and YES/NO/NOT GIVEN \u2014 you MUST use a <select> dropdown, NEVER a text input, so students cannot lose marks by typing T, F, NG or Y. Render each as: <select name=\"qN\"><option value=\"\">\u2014 Choose \u2014</option><option value=\"TRUE\">TRUE</option><option value=\"FALSE\">FALSE</option><option value=\"NOT GIVEN\">NOT GIVEN</option></select>. For YES/NO/NOT GIVEN use YES, NO and NOT GIVEN as the option values instead. Option values MUST be the full word(s) in capitals, never abbreviations. The answer array MUST begin with that exact full value.\n4c. Preserve question numbers and all section instructions exactly.\n4e. DIAGRAM / MAP / PLAN / FLOW-CHART / TABLE LABEL COMPLETION \u2014 when a question set refers to a figure, diagram, map, plan, flow-chart or table, the visual itself is NOT given to you (a separate image will be added later). You MUST STILL create one <input type=\"text\" name=\"qN\"> for EVERY numbered blank in that set, each on its own short line labelled with its number and whatever caption words exist, e.g. <div><b>21</b> <input type=\"text\" name=\"q21\"> km deep</div> or <div><b>23</b> it has <input type=\"text\" name=\"q23\"> of molten rock</div>. NEVER omit a numbered blank just because its content sits inside a figure, and ALWAYS include an answer for every such blank in the answers object.\n5. Solve every question with PERFECT ACCURACY \u2014 re-read the passage carefully for each question before answering. Think step by step.\n6. For each answer, provide an ARRAY of ALL acceptable answer variants. Examples:\n   - TRUE/FALSE/NOT GIVEN: ["TRUE", "T"] or ["FALSE", "F"] or ["NOT GIVEN", "NG", "N/G"]\n   - YES/NO/NOT GIVEN: ["YES", "Y"] or ["NO", "N"] or ["NOT GIVEN", "NG"]\n   - Short fill-in: include singular/plural, with/without article, common abbreviations\n   - Multiple choice: include just the letter AND the full option text\n   - Matching (headings/features/paragraphs/endings): the answer array MUST contain the IDENTIFIER that matches the <option> value exactly \u2014 e.g. ["iii"] for a heading, ["B"] for a paragraph/feature/ending. You may add the full text as a second variant, but the identifier MUST be first.\n7. For each answer, write a SHORT explanation (1\u20132 sentences) quoting or referencing the exact part of the passage that proves the answer.\n8. OUTPUT FORMAT (READ CAREFULLY): Do NOT put the passage or questions inside JSON. Return your answer using the EXACT marker lines below. Each marker must be on its own line. Put nothing before the first marker and nothing after the last marker.\n\n===GG_TITLE===\nshort plain-text title, no quotation marks\n===GG_PASSAGE===\nthe passage HTML here\n===GG_QUESTIONS===\nthe questions HTML here (normal double-quoted attributes like name="q1" are perfectly fine here; this block is NOT parsed as JSON, so you do NOT need to escape anything in it)\n===GG_ANSWERS===\na JSON object ONLY, for example: {"q1": ["primary_answer", "variant1"], "q2": ["primary_answer", "variant2"]}\n===GG_EXPLANATIONS===\na JSON object ONLY, for example: {"q1": "Explanation for q1.", "q2": "Explanation for q2."}\n===GG_END===\n\nOnly the ANSWERS and EXPLANATIONS blocks are parsed as JSON: inside THOSE two blocks only, escape any double-quote as \\" and use \\n instead of a real newline. RESPOND with ONLY the marked blocks above, zero markdown, zero code fences, nothing else.';
+        // Known answers (and, optionally, explanations embedded in the same
+        // paste) supplied by the teacher — e.g. drafted and verified by a
+        // local model beforehand. When present, the API's job shrinks: it no
+        // longer solves anything, and if explanations were included too, it
+        // doesn't write those either — pure formatting only, which is both
+        // cheaper and removes the risk of the model silently changing a
+        // correct answer while restructuring the text. Understands both
+        // "1-TRUE" (plain) and "1-TRUE: because the text says..." (answer +
+        // explanation together) in the same box — see parseAnswerKeyCombined().
+        var combined = parseAnswerKeyCombined(knownAnsRaw);
+        var knownAns = combined.answers;
+        var knownExp = combined.explanations;
+        var useKnownAns = knownAns.length > 0;
+        var useKnownExp = useKnownAns && knownExp.some(function(e) { return e; });
 
-        // Shift every example question ID in the prompt into this passage's window,
-        // then state the numbering rule explicitly just before the output schema.
+        var head = 'You are an expert IELTS Test Architect with deep knowledge of IELTS reading question types. Process the reading test below with PERFECT ACCURACY.\n\nINPUT TEXT:\n"""\n' + input + '\n"""\n\n';
+
+        var solveStep = useKnownAns
+            ? '5. The correct answer for every question is ALREADY VERIFIED and given below, in the SAME order the questions appear in the input. Do NOT solve, re-derive, or second-guess any answer \u2014 use them exactly as given, in order. Do not skip, merge, or reorder any question; your question count MUST equal the number of verified answers given.\n\nVERIFIED ANSWERS IN ORDER (' + knownAns.length + ' total): ' + JSON.stringify(knownAns) + '\n\n'
+            : '5. Solve every question with PERFECT ACCURACY \u2014 re-read the passage carefully for each question before answering. Think step by step.\n\n';
+
+        var answersStep = useKnownAns
+            ? ''
+            : '6. For each answer, provide an ARRAY of ALL acceptable answer variants. Examples:\n   - TRUE/FALSE/NOT GIVEN: ["TRUE", "T"] or ["FALSE", "F"] or ["NOT GIVEN", "NG", "N/G"]\n   - YES/NO/NOT GIVEN: ["YES", "Y"] or ["NO", "N"] or ["NOT GIVEN", "NG"]\n   - Short fill-in: include singular/plural, with/without article, common abbreviations\n   - Multiple choice: include just the letter AND the full option text\n   - Matching (headings/features/paragraphs/endings): the answer array MUST contain the IDENTIFIER that matches the <option> value exactly \u2014 e.g. ["iii"] for a heading, ["B"] for a paragraph/feature/ending. You may add the full text as a second variant, but the identifier MUST be first.\n\n';
+
+        var explainStep = useKnownExp
+            ? '7. Explanations are ALREADY WRITTEN and given below, in the SAME order as the questions. Do NOT write your own \u2014 you do not need to output an explanations block at all.\n\nGIVEN EXPLANATIONS IN ORDER: ' + JSON.stringify(knownExp) + '\n\n'
+            : useKnownAns
+                ? '7. For each answer (using the VERIFIED answer given, not one you derive), write a SHORT explanation (1\u20132 sentences) quoting or referencing the exact part of the passage that proves it.\n\n'
+                : '7. For each answer, write a SHORT explanation (1\u20132 sentences) quoting or referencing the exact part of the passage that proves the answer.\n\n';
+
+        var outputSchema = '8. OUTPUT FORMAT (READ CAREFULLY): Do NOT put the passage or questions inside JSON. Return your answer using the EXACT marker lines below. Each marker must be on its own line. Put nothing before the first marker and nothing after the last marker.\n\n' +
+            '===GG_TITLE===\nshort plain-text title, no quotation marks\n' +
+            '===GG_PASSAGE===\nthe passage HTML here\n' +
+            '===GG_QUESTIONS===\nthe questions HTML here (normal double-quoted attributes like name="q1" are perfectly fine here; this block is NOT parsed as JSON, so you do NOT need to escape anything in it)\n' +
+            (useKnownAns ? '' : '===GG_ANSWERS===\na JSON object ONLY, for example: {"q1": ["primary_answer", "variant1"], "q2": ["primary_answer", "variant2"]}\n') +
+            (useKnownExp ? '' : '===GG_EXPLANATIONS===\na JSON object ONLY, for example: {"q1": "Explanation for q1.", "q2": "Explanation for q2."}\n') +
+            '===GG_END===\n\n' +
+            (useKnownAns && useKnownExp
+                ? 'RESPOND with ONLY the marked blocks above, zero markdown, zero code fences, nothing else.'
+                : 'Inside the ANSWERS and EXPLANATIONS blocks only, escape any double-quote as \\" and use \\n instead of a real newline. RESPOND with ONLY the marked blocks above, zero markdown, zero code fences, nothing else.');
+
+        var prompt = head +
+            'INSTRUCTIONS:\n1. Separate the PASSAGE from the QUESTIONS.\n2. ' + diffMap[level] + '\n3. Format the passage as HTML using <p> tags per paragraph. Add a bold label <b>A.</b>, <b>B.</b>, etc. at the start of each paragraph.\n4. Format the questions as clean HTML. Use <input type="text" name="q1"> (q1, q2, q3\u2026 in order) for fill-in-the-blank/short-answer/completion. Use radio inputs for standard multiple choice (A/B/C/D).\n4b. MATCHING QUESTION TYPES \u2014 this covers Matching Headings, Matching Information (which paragraph), Matching Features, and Matching Sentence Endings. For EVERY matching question, you MUST use a <select> dropdown, NEVER a text input or radio. Rules:\n   - First, render the shared list of options ONCE as a reference bank above the questions, e.g. <div class="opt-bank"><b>List of Headings</b><br>i. Heading text<br>ii. Heading text<br>\u2026</div>. Use the IDENTIFIER actually given in the input (roman numerals i, ii, iii for headings; letters A, B, C for paragraphs/features/endings).\n   - Then render each question as: <select name="qN"><option value="">\u2014 Choose \u2014</option><option value="ii">ii</option><option value="iii">iii</option>\u2026</select>. The <option> value MUST be ONLY the identifier (the roman numeral or letter), not the full text.\n   - Include ALL available options in every dropdown (including distractors that are not used as answers).\n4d. TRUE/FALSE/NOT GIVEN and YES/NO/NOT GIVEN \u2014 you MUST use a <select> dropdown, NEVER a text input, so students cannot lose marks by typing T, F, NG or Y. Render each as: <select name="qN"><option value="">\u2014 Choose \u2014</option><option value="TRUE">TRUE</option><option value="FALSE">FALSE</option><option value="NOT GIVEN">NOT GIVEN</option></select>. For YES/NO/NOT GIVEN use YES, NO and NOT GIVEN as the option values instead. Option values MUST be the full word(s) in capitals, never abbreviations.' + (useKnownAns ? ' The given verified answer already tells you which value each dropdown should default toward being correct for \u2014 just make sure the option set matches.' : ' The answer array MUST begin with that exact full value.') + '\n4c. Preserve question numbers and all section instructions exactly.\n4e. DIAGRAM / MAP / PLAN / FLOW-CHART / TABLE LABEL COMPLETION \u2014 when a question set refers to a figure, diagram, map, plan, flow-chart or table, the visual itself is NOT given to you (a separate image will be added later). You MUST STILL create one <input type="text" name="qN"> for EVERY numbered blank in that set, each on its own short line labelled with its number and whatever caption words exist, e.g. <div><b>21</b> <input type="text" name="q21"> km deep</div> or <div><b>23</b> it has <input type="text" name="q23"> of molten rock</div>. NEVER omit a numbered blank just because its content sits inside a figure' + (useKnownAns ? '' : ', and ALWAYS include an answer for every such blank in the answers object') + '.\n' +
+            solveStep + answersStep + explainStep + outputSchema;
+
+        // Shift every example question ID in the prompt into this passage's window.
         prompt = prompt
             .split('(q1, q2, q3').join('(q' + startNum + ', q' + (startNum + 1) + ', q' + (startNum + 2))
             .split('"q1"').join('"q' + startNum + '"')
             .split('"q2"').join('"q' + (startNum + 1) + '"');
-
-        // Ask for the passage title too, so each tab gets a real heading without
-        // the teacher typing one in.
-        prompt = prompt.replace('"passage": "HTML string",',
-                                '"title": "Short plain-text title of this passage",\n  "passage": "HTML string",');
 
         var numRules =
             'TITLE:\n' +
@@ -1479,25 +1612,35 @@
             '- The questions for this passage MUST be numbered starting at ' + startNum + '. The first question is number ' + startNum + ', the next is ' + (startNum + 1) + ', and so on in unbroken sequence.\n' +
             '- Use these same numbers in the VISIBLE question text and in every section instruction \u2014 e.g. "Questions ' + startNum + '\u2013' + (startNum + 4) + '".\n' +
             '- Use these same numbers in the input names: name="q' + startNum + '", name="q' + (startNum + 1) + '", and so on.\n' +
-            '- If the input text numbers its questions differently, RENUMBER them into this sequence. Never skip or repeat a number.\n' +
-            '- The keys of the "answers" and "explanations" objects MUST match the input names exactly.';
+            (useKnownAns
+                ? '- This numbering order MUST match the order of the VERIFIED ANSWERS list given above \u2014 the first question you output corresponds to the first verified answer, and so on.\n'
+                : '- If the input text numbers its questions differently, RENUMBER them into this sequence. Never skip or repeat a number.\n') +
+            (useKnownAns ? '' : '- The keys of the "answers" and "explanations" objects MUST match the input names exactly.');
 
         prompt = prompt.replace('RESPOND with ONLY', numRules + '\n\nRESPOND with ONLY');
 
-        log('Connecting to Claude claude-sonnet-5\u2026');
+        log('Connecting to Claude claude-sonnet-5' + (useKnownAns ? (useKnownExp ? ' (formatting only \u2014 answers & explanations already supplied)' : ' (formatting + explaining \u2014 answers already supplied)') : '') + '\u2026');
         var text = await callClaude(prompt, 16000, 1, questionsComplete, QUESTION_EFFORT);
         log('Response received. Validating structure\u2026');
         var data = parseResponse(text);
 
-        if (!data.passage || !data.questions || !data.answers) {
-            throw new Error('AI response missing required fields (passage/questions/answers).');
+        if (!data.passage || !data.questions) {
+            throw new Error('AI response missing required fields (passage/questions).');
         }
-        if (!data.explanations) {
+        if (useKnownAns) {
+            data.answers = buildFromOrderedList(startNum, knownAns, true);
+        } else if (!data.answers) {
+            throw new Error('AI response missing required fields (answers).');
+        }
+        if (useKnownExp) {
+            data.explanations = buildFromOrderedList(startNum, knownExp, false);
+        } else if (!data.explanations) {
             log('No explanations returned \u2014 Explain button will fetch them live.', 'warn');
             data.explanations = {};
         }
         return data;
     }
+
 
     function esc(s) {
         return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
