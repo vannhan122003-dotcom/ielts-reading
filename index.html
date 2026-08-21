@@ -7,6 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js"></script>
     <style>
         :root {
             --brand-primary: #1e4620; --brand-accent: #2e7d32; --brand-light: #e8f5e9;
@@ -325,9 +326,9 @@
             <div class="quickpaste-box">
                 <div class="quickpaste-row">
                     <button type="button" class="qp-upload-btn" onclick="document.getElementById('qpFile').click()">
-                        <i class="fa-solid fa-file-arrow-up"></i> Tải lên file .md
+                        <i class="fa-solid fa-file-arrow-up"></i> Tải lên file .md/.txt/.docx
                     </button>
-                    <input type="file" id="qpFile" accept=".md,.markdown,.txt" hidden onchange="onQuickPasteFile(this)">
+                    <input type="file" id="qpFile" accept=".md,.markdown,.txt,.docx" hidden onchange="onQuickPasteFile(this)">
                 </div>
                 <textarea id="qpText" oninput="previewQuickPaste()" placeholder="Dán toàn bộ đề vào đây: cả 3 bài đọc, câu hỏi, và đáp án + giải thích. Công cụ sẽ tự nhận diện từng bài khi bạn bấm một trình độ bên dưới.&#10;&#10;(Paste the whole test here — all 3 passages, questions, and answer key + explanations. The tool auto-detects each passage when you click a level button below.)" style="height:220px;"></textarea>
                 <div class="qp-status" id="qpStatus"></div>
@@ -1167,9 +1168,80 @@
     // automatically inside buildTest() when a level button is clicked, so
     // there's no separate "split" step to run here. A quick preview count
     // is shown immediately so a bad paste is obvious before spending tokens.
-    function onQuickPasteFile(input) {
+    // .docx is a zip of XML, not plain text — it can't just be read with
+    // FileReader.readAsText() the way .md/.txt can. Mammoth.js unpacks it
+    // client-side (no server, no upload of the file anywhere) and gives us
+    // HTML we can walk ourselves, converting Word's real heading/bold
+    // styles into the "## " / "**bold**" markers the splitter looks for —
+    // this matters because a .docx heading is usually applied as a Word
+    // style, not literal typed "##" characters, so the splitter would see
+    // nothing at all without this conversion step.
+    function docxHtmlToMarkdown(html) {
+        var container = document.createElement('div');
+        container.innerHTML = html;
+        var lines = [];
+
+        function tableToMarkdown(table) {
+            var rows = Array.prototype.slice.call(table.querySelectorAll('tr'));
+            var out = [];
+            rows.forEach(function(tr, i) {
+                var cells = Array.prototype.slice.call(tr.querySelectorAll('th,td'))
+                    .map(function(c) { return c.textContent.trim().replace(/\|/g, '\\|'); });
+                out.push('| ' + cells.join(' | ') + ' |');
+                if (i === 0) out.push('|' + cells.map(function() { return '---'; }).join('|') + '|');
+            });
+            return out.join('\n');
+        }
+
+        Array.prototype.forEach.call(container.children, function(node) {
+            var tag = node.tagName ? node.tagName.toLowerCase() : '';
+            if (/^h[1-6]$/.test(tag)) {
+                lines.push('## ' + node.textContent.trim());
+            } else if (tag === 'table') {
+                lines.push(tableToMarkdown(node));
+            } else if (tag === 'p' || tag === 'li') {
+                // Preserve bold runs as **text** so answer-key markers like
+                // "**Part 5:**" or "**Passage 1 (Questions 1-13):**" still
+                // parse correctly even if the source used Word's Bold
+                // button rather than typed asterisks.
+                var html2 = node.innerHTML
+                    .replace(/<(strong|b)[^>]*>/gi, '**').replace(/<\/(strong|b)>/gi, '**')
+                    .replace(/<[^>]+>/g, '');
+                var tmp = document.createElement('div');
+                tmp.innerHTML = html2;
+                lines.push((tag === 'li' ? '- ' : '') + tmp.textContent.trim());
+            } else {
+                var txt = node.textContent.trim();
+                if (txt) lines.push(txt);
+            }
+        });
+        return lines.join('\n\n');
+    }
+
+    async function onQuickPasteFile(input) {
         var f = input.files && input.files[0];
         if (!f) return;
+        var status = document.getElementById('qpStatus');
+
+        if (/\.docx$/i.test(f.name)) {
+            if (typeof mammoth === 'undefined') {
+                if (status) { status.className = 'qp-status err'; status.textContent = '\u2717 Th\u01b0 vi\u1ec7n \u0111\u1ecdc .docx ch\u01b0a t\u1ea3i \u0111\u01b0\u1ee3c \u2014 ki\u1ec3m tra k\u1ebft n\u1ed1i m\u1ea1ng r\u1ed3i th\u1eed l\u1ea1i.'; }
+                input.value = ''; return;
+            }
+            try {
+                if (status) { status.className = 'qp-status'; status.textContent = '\u23f3 \u0110ang \u0111\u1ecdc file .docx\u2026'; }
+                var arrayBuffer = await f.arrayBuffer();
+                var result = await mammoth.convertToHtml({ arrayBuffer: arrayBuffer });
+                var md = docxHtmlToMarkdown(result.value);
+                document.getElementById('qpText').value = md;
+                previewQuickPaste();
+            } catch (err) {
+                if (status) { status.className = 'qp-status err'; status.textContent = '\u2717 Kh\u00f4ng \u0111\u1ecdc \u0111\u01b0\u1ee3c file .docx: ' + err.message; }
+            }
+            input.value = '';
+            return;
+        }
+
         var r = new FileReader();
         r.onload = function() {
             document.getElementById('qpText').value = r.result;
