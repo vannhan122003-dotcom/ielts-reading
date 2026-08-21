@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reading Architect v9.16 - GG Languages Academy</title>
+    <title>GG IELTS Reading Architect v11.0 - GG Languages Academy</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -15,9 +15,7 @@
         }
         *, *::before, *::after { box-sizing: border-box; }
         body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 28px 20px; }
-        .container { max-width: 920px; margin: 0 auto; transition: max-width 0.25s ease; }
-        .container.cols-2 { max-width: 1240px; }
-        .container.cols-3 { max-width: 1560px; }
+        .container { max-width: 920px; margin: 0 auto; }
 
         .app-header { display: flex; align-items: center; gap: 16px; margin-bottom: 28px; padding-bottom: 22px; border-bottom: 2px solid #e5e7eb; }
         .logo-img { height: 58px; filter: drop-shadow(0 2px 6px rgba(30,70,32,0.18)); }
@@ -117,7 +115,7 @@
         /* ---- Mode switch: paste an existing test vs let the AI write one ---- */
         .mode-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .mode-btn {
-            padding: 15px 12px; border: 1.5px solid var(--border); background: #fdfdfd;
+            padding: 15px 12px; border: 2px solid var(--border); background: #fdfdfd;
             border-radius: 10px; cursor: pointer; font-family: inherit; font-weight: 800;
             font-size: 0.88rem; color: var(--text-sub); transition: all 0.18s; text-align: left;
             display: flex; align-items: center; gap: 12px;
@@ -125,9 +123,13 @@
         .mode-btn i { font-size: 1.15rem; opacity: 0.75; }
         .mode-btn small { display: block; font-weight: 500; font-size: 0.7rem; opacity: 0.85; margin-top: 2px; }
         .mode-btn:hover:not(:disabled) { border-color: var(--brand-accent); }
-        .mode-btn.active { background: var(--brand-light); border-color: var(--brand-accent); color: var(--brand-primary); box-shadow: 0 0 0 3px rgba(46,125,50,0.12); }
-        .mode-btn.active i { opacity: 1; }
         .mode-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        /* Convert = green (primary flow), Author = amber (secondary/alternate flow) —
+           distinct color families so the two modes are unmistakable at a glance. */
+        .mode-btn.convert.active { background: var(--brand-light); border-color: var(--brand-accent); color: var(--brand-primary); box-shadow: 0 0 0 3px rgba(46,125,50,0.14); }
+        .mode-btn.convert.active i { opacity: 1; }
+        .mode-btn.author.active { background: #fff8e1; border-color: #d97706; color: #92400e; box-shadow: 0 0 0 3px rgba(217,119,6,0.14); }
+        .mode-btn.author.active i { opacity: 1; color: #d97706; }
 
         .type-chips { display: flex; flex-wrap: wrap; gap: 8px; }
         .type-chip {
@@ -140,6 +142,36 @@
         .type-chip.auto.active { background: var(--brand-primary); border-color: var(--brand-primary); color: #fff; }
         .type-chip:disabled { opacity: 0.5; cursor: not-allowed; }
         .hidden-soft { display: none; }
+
+        /* ---- Bilingual labels: Vietnamese primary, English small below ---- */
+        .vi-label { display: block; }
+        .en-label { display: block; font-size: 0.72em; font-weight: 500; opacity: 0.62; margin-top: 1px; letter-spacing: 0; text-transform: none; }
+
+        /* ---- Whole-test quick paste / upload ---- */
+        .quickpaste-box { border: 2px dashed var(--brand-accent); border-radius: 12px; padding: 18px;
+                           background: #f6fbf6; margin-bottom: 10px; }
+        .quickpaste-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+        .qp-upload-btn { border: 1.5px solid var(--brand-accent); background: #fff; color: var(--brand-primary);
+                          border-radius: 9px; padding: 10px 16px; font-family: inherit; font-weight: 800;
+                          font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+        .qp-upload-btn:hover { background: var(--brand-light); }
+        .qp-split-btn { border: none; background: var(--brand-primary); color: #fff; border-radius: 9px;
+                        padding: 10px 18px; font-family: inherit; font-weight: 800; font-size: 0.85rem;
+                        cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+        .qp-split-btn:hover { background: #256427; }
+        .qp-status { font-size: 0.8rem; font-weight: 600; margin-top: 8px; }
+        .qp-status.ok  { color: #166534; }
+        .qp-status.err { color: #c0392b; }
+
+        /* ---- Unified image-range manager ---- */
+        .img-rows { display: flex; flex-direction: column; gap: 10px; }
+        .img-row { border: 1.5px solid var(--border); border-radius: 10px; padding: 12px 14px; background: #fdfdfd; }
+        .img-add-btn { border: 1.5px dashed var(--brand-accent); background: #fff; color: var(--brand-primary);
+                       border-radius: 9px; padding: 10px 16px; font-family: inherit; font-weight: 800;
+                       font-size: 0.83rem; cursor: pointer; margin-top: 8px; }
+        .img-add-btn:hover { background: var(--brand-light); }
+        .img-range-inputs { display: inline-flex; align-items: center; gap: 6px; font-size: 0.78rem; font-weight: 600; color: #64748b; }
+        .img-range-inputs input { width: 58px; padding: 6px 8px !important; font-size: 0.8rem !important; text-align: center; }
 
         /* ---- Topic memory panel ---- */
         .hist-count { font-weight: 600; font-size: 0.72rem; opacity: 0.75; letter-spacing: 0; text-transform: none; }
@@ -171,26 +203,6 @@
         }
 
         /* ---- Per-passage input columns ---- */
-        #psgBlocks { display: grid; gap: 16px; align-items: start; grid-template-columns: 1fr; }
-        #psgBlocks.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-        #psgBlocks.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-        .psg-block { border: 1.5px solid var(--border); border-radius: 12px; padding: 18px 18px 2px;
-                     background: #fcfdfc; }
-        .psg-block.hidden { display: none; }
-        .psg-head { display: flex; align-items: center; gap: 9px; margin-bottom: 15px;
-                    padding-bottom: 12px; border-bottom: 1px solid var(--border); }
-        .psg-num { width: 25px; height: 25px; border-radius: 50%; background: var(--brand-primary); color: #fff;
-                   font-size: 0.75rem; font-weight: 800; display: flex; align-items: center;
-                   justify-content: center; flex-shrink: 0; }
-        .psg-head h3 { margin: 0; font-size: 0.92rem; font-weight: 800; color: var(--brand-primary);
-                       letter-spacing: -0.2px; white-space: nowrap; }
-        .psg-head .qhint { margin-left: auto; font-size: 0.62rem; font-weight: 700; color: var(--text-sub);
-                           background: #eef2f6; padding: 3px 8px; border-radius: 20px; white-space: nowrap; }
-        .psg-block .field-group { margin-bottom: 16px; }
-        .psg-block .field-label { font-size: 0.68rem; }
-        .psg-block input[type="text"] { padding: 11px 13px; font-size: 0.88rem; }
-        .psg-block textarea { height: 340px; }
-
         .img-attach { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
         .img-pick { border: 1px solid var(--brand-accent); background: #f1f8f2; color: var(--brand); border-radius: 9px; padding: 8px 13px; font-family: inherit; font-weight: 700; font-size: 0.78rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
         .img-pick:hover { background: #e5f2e7; }
@@ -201,12 +213,6 @@
         .img-preview img { max-height: 92px; max-width: 100%; border: 1px solid var(--border); border-radius: 8px; vertical-align: middle; }
         .img-preview .img-rm { margin-left: 8px; color: #dc2626; font-size: 0.74rem; font-weight: 700; cursor: pointer; background: none; border: none; }
         .img-preview .img-name { font-size: 0.72rem; color: #64748b; margin-left: 6px; }
-
-        /* Columns collapse to a single stack on narrow screens */
-        @media (max-width: 1080px) {
-            .container.cols-2, .container.cols-3 { max-width: 920px; }
-            #psgBlocks.cols-2, #psgBlocks.cols-3 { grid-template-columns: 1fr; }
-        }
 
         .btn-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
 
@@ -234,8 +240,8 @@
 
         .pre  { background: linear-gradient(145deg, #1d6fa8 0%, #0d5c96 100%); box-shadow: 0 6px 20px rgba(13,92,150,0.35); }
         .pre:hover:not(:disabled)  { box-shadow: 0 12px 28px rgba(13,92,150,0.45); }
-        .fund { background: linear-gradient(145deg, #0a9688 0%, #00796b 100%); box-shadow: 0 6px 20px rgba(0,121,107,0.35); }
-        .fund:hover:not(:disabled) { box-shadow: 0 12px 28px rgba(0,121,107,0.45); }
+        .fund { background: linear-gradient(145deg, #f59e0b 0%, #d97706 100%); box-shadow: 0 6px 20px rgba(217,119,6,0.35); }
+        .fund:hover:not(:disabled) { box-shadow: 0 12px 28px rgba(217,119,6,0.45); }
         .core { background: linear-gradient(145deg, #2e7d32 0%, #1b5e20 100%); box-shadow: 0 6px 20px rgba(27,94,32,0.38); }
         .core:hover:not(:disabled) { box-shadow: 0 12px 28px rgba(27,94,32,0.5); }
 
@@ -250,7 +256,7 @@
     <header class="app-header">
         <img src="https://1drv.ms/i/c/cf90a27d1e2d64dd/IQSj_4BbUuwwTaAK8FBiFwC8AWjhNghEL4u78fASnBpZR9g?width=65&height=74" alt="GG Logo" class="logo-img">
         <div class="app-title">
-            <h1>GG READING ARCHITECT <span class="version-chip">v10.3</span></h1>
+            <h1>GG IELTS READING ARCHITECT <span class="version-chip">v11.0</span></h1>
             <div class="sub">Edited by Mr. Nhân &middot; 0984 351 477</div>
         </div>
         <button type="button" class="key-orb" id="keyOrb" onclick="toggleKeyForm()" title="API key"></button>
@@ -269,18 +275,15 @@
 
 
         <div class="field-group">
-            <div class="field-label"><i class="fa-solid fa-wand-magic-sparkles"></i> Test Source</div>
-            <div class="field-hint">Choose where the passages come from. <b>Convert</b> is the old behaviour &mdash; you paste a real Cambridge/ETS test and the machine rebuilds it. <b>Author</b> writes a brand-new, original test from scratch, so you never have to hunt for source material.</div>
+            <div class="field-label"><i class="fa-solid fa-wand-magic-sparkles"></i> <span class="vi-label">Nguồn đề thi<span class="en-label">Test Source</span></span></div>
             <div class="mode-row">
-                <button type="button" class="mode-btn active" id="mode-convert" onclick="setMode('convert')">
+                <button type="button" class="mode-btn convert active" id="mode-convert" onclick="setMode('convert')">
                     <i class="fa-solid fa-paste"></i>
-                    <span>CONVERT AN EXISTING TEST
-                        <small>Bạn dán đề có sẵn &mdash; AI chuẩn hoá &amp; chấm</small></span>
+                    <span>DÁN ĐỀ CÓ SẴN<small>Bạn dán đề thật, AI chuẩn hoá &amp; chấm &middot; Convert an existing test</small></span>
                 </button>
-                <button type="button" class="mode-btn" id="mode-author" onclick="setMode('author')">
+                <button type="button" class="mode-btn author" id="mode-author" onclick="setMode('author')">
                     <i class="fa-solid fa-feather-pointed"></i>
-                    <span>AI WRITES THE TEST
-                        <small>AI tự viết bài đọc gốc + bộ câu hỏi</small></span>
+                    <span>AI TỰ VIẾT ĐỀ<small>AI viết bài đọc gốc + bộ câu hỏi &middot; AI writes the test</small></span>
                 </button>
             </div>
         </div>
@@ -316,122 +319,32 @@
             <textarea class="hist-io" id="histIO" spellcheck="false"></textarea>
         </div>
 
-        <div class="field-group">
-            <div class="field-label"><i class="fa-solid fa-gauge-high"></i> Reasoning Effort <span style="font-weight:500;opacity:.7">(cost vs accuracy)</span></div>
-            <div class="field-hint">Sonnet 5 defaults to <b>high</b> effort and thinks before answering &mdash; those reasoning tokens are billed as output. Passage <i>writing</i> is always set to low (creative prose gains little from deliberation). This control applies to the step that <b>writes and solves the questions</b>, where reasoning is what keeps the answer key right.</div>
-            <div class="count-row">
-                <button type="button" class="count-btn" data-e="low" onclick="setEffort('low')">ECONOMY<small>low &middot; cheapest, check the key</small></button>
-                <button type="button" class="count-btn active" data-e="medium" onclick="setEffort('medium')">BALANCED<small>medium &middot; recommended</small></button>
-                <button type="button" class="count-btn" data-e="high" onclick="setEffort('high')">ACCURACY<small>high &middot; API default</small></button>
+
+        <div class="field-group" id="quickPasteGroup">
+            <div class="field-label"><i class="fa-solid fa-bolt"></i> <span class="vi-label">Dán / Tải lên toàn bộ đề (3 bài)<span class="en-label">Paste or upload the whole test (3 passages)</span></span></div>
+            <div class="quickpaste-box">
+                <div class="quickpaste-row">
+                    <button type="button" class="qp-upload-btn" onclick="document.getElementById('qpFile').click()">
+                        <i class="fa-solid fa-file-arrow-up"></i> Tải lên file .md
+                    </button>
+                    <input type="file" id="qpFile" accept=".md,.markdown,.txt" hidden onchange="onQuickPasteFile(this)">
+                </div>
+                <textarea id="qpText" oninput="previewQuickPaste()" placeholder="Dán toàn bộ đề vào đây: cả 3 bài đọc, câu hỏi, và đáp án + giải thích. Công cụ sẽ tự nhận diện từng bài khi bạn bấm một trình độ bên dưới.&#10;&#10;(Paste the whole test here — all 3 passages, questions, and answer key + explanations. The tool auto-detects each passage when you click a level button below.)" style="height:220px;"></textarea>
+                <div class="qp-status" id="qpStatus"></div>
             </div>
         </div>
 
         <div class="field-group">
-            <div class="field-label"><i class="fa-solid fa-layer-group"></i> Number of Passages</div>
-            <div class="count-row">
-                <button type="button" class="count-btn active" data-n="1" onclick="setCount(1)">1 PASSAGE<small>20 minutes</small></button>
-                <button type="button" class="count-btn" data-n="2" onclick="setCount(2)">2 PASSAGES<small>40 minutes</small></button>
-                <button type="button" class="count-btn" data-n="3" onclick="setCount(3)">3 PASSAGES<small>60 min &middot; full test</small></button>
-            </div>
-        </div>
-
-        <div id="psgBlocks">
-            <div class="psg-block" id="block-1">
-                <div class="psg-head">
-                    <div class="psg-num">1</div>
-                    <h3>Reading Passage 1</h3>
-                    <span class="qhint" id="hint-1">Questions start at 1</span>
-                </div>
-                <div class="field-group">
-                    <div class="field-label"><i class="fa-solid fa-tag"></i> Passage 1 Title</div>
-                    <input type="text" id="ptitle-1" placeholder="e.g., The Meaning of Tourism">
-                </div>
-                <div class="field-group">
-                    <div class="field-label" id="inlabel-1"><i class="fa-solid fa-file-lines"></i> Passage 1 &mdash; Text + Questions</div>
-                    <textarea id="input-1" placeholder="Paste passage 1 and its questions here&#x2026;"></textarea>
-                </div>
-                <div class="field-group">
-                    <div class="field-label"><i class="fa-solid fa-key"></i> Passage 1 &mdash; Answer Key + Explanations <span class="opt-chip">optional</span></div>
-                    <div class="field-hint">Paste a verified answer key, with or without explanations built in &mdash; plain (<b>1-TRUE, 2-B</b>) or with reasoning (<b>1-TRUE: the text says&hellip;</b>). Either way, the AI skips solving and only formats. (Dán đáp án đã kiểm tra, có thể kèm giải thích ngay trong ô này &mdash; AI sẽ không tự giải nữa.)</div>
-                    <textarea id="answers-1" placeholder="1-TRUE: because... 2-FALSE: because... or just 1-TRUE, 2-FALSE, 3-B" style="height:150px;"></textarea>
-                </div>
-                <div class="field-group">
-                    <div class="field-label"><i class="fa-solid fa-image"></i> Hình minh hoạ (nếu có)</div>
-                    <div class="img-attach">
-                        <button type="button" class="img-pick" onclick="pickImg(1)"><i class="fa-solid fa-upload"></i> Chọn ảnh</button>
-                        <span class="img-beforewrap">chèn trước câu số
-                            <input type="number" class="img-beforeq" id="imgq-1" min="1" placeholder="vd 21"></span>
-                        <input type="file" id="imgfile-1" accept="image/*" hidden onchange="onImg(1,this)">
-                        <div class="img-preview" id="imgprev-1"></div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="psg-block hidden" id="block-2">
-                <div class="psg-head">
-                    <div class="psg-num">2</div>
-                    <h3>Reading Passage 2</h3>
-                    <span class="qhint" id="hint-2">Numbered after P1</span>
-                </div>
-                <div class="field-group">
-                    <div class="field-label"><i class="fa-solid fa-tag"></i> Passage 2 Title</div>
-                    <input type="text" id="ptitle-2" placeholder="e.g., The Rise of Urban Farming">
-                </div>
-                <div class="field-group">
-                    <div class="field-label" id="inlabel-2"><i class="fa-solid fa-file-lines"></i> Passage 2 &mdash; Text + Questions</div>
-                    <textarea id="input-2" placeholder="Paste passage 2 and its questions here&#x2026;"></textarea>
-                </div>
-                <div class="field-group">
-                    <div class="field-label"><i class="fa-solid fa-key"></i> Passage 2 &mdash; Answer Key + Explanations <span class="opt-chip">optional</span></div>
-                    <textarea id="answers-2" placeholder="14-x: because... 15-ii: because... or just 14-x, 15-ii, 16-viii" style="height:150px;"></textarea>
-                </div>
-                <div class="field-group">
-                    <div class="field-label"><i class="fa-solid fa-image"></i> Hình minh hoạ (nếu có)</div>
-                    <div class="img-attach">
-                        <button type="button" class="img-pick" onclick="pickImg(2)"><i class="fa-solid fa-upload"></i> Chọn ảnh</button>
-                        <span class="img-beforewrap">chèn trước câu số
-                            <input type="number" class="img-beforeq" id="imgq-2" min="1" placeholder="vd 21"></span>
-                        <input type="file" id="imgfile-2" accept="image/*" hidden onchange="onImg(2,this)">
-                        <div class="img-preview" id="imgprev-2"></div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="psg-block hidden" id="block-3">
-                <div class="psg-head">
-                    <div class="psg-num">3</div>
-                    <h3>Reading Passage 3</h3>
-                    <span class="qhint" id="hint-3">Numbered after P2</span>
-                </div>
-                <div class="field-group">
-                    <div class="field-label"><i class="fa-solid fa-tag"></i> Passage 3 Title</div>
-                    <input type="text" id="ptitle-3" placeholder="e.g., Why Do Languages Die?">
-                </div>
-                <div class="field-group">
-                    <div class="field-label" id="inlabel-3"><i class="fa-solid fa-file-lines"></i> Passage 3 &mdash; Text + Questions</div>
-                    <textarea id="input-3" placeholder="Paste passage 3 and its questions here&#x2026;"></textarea>
-                </div>
-                <div class="field-group">
-                    <div class="field-label"><i class="fa-solid fa-key"></i> Passage 3 &mdash; Answer Key + Explanations <span class="opt-chip">optional</span></div>
-                    <textarea id="answers-3" placeholder="27-B: because... 28-C: because... or just 27-B, 28-C, 29-D" style="height:150px;"></textarea>
-                </div>
-                <div class="field-group">
-                    <div class="field-label"><i class="fa-solid fa-image"></i> Hình minh hoạ (nếu có)</div>
-                    <div class="img-attach">
-                        <button type="button" class="img-pick" onclick="pickImg(3)"><i class="fa-solid fa-upload"></i> Chọn ảnh</button>
-                        <span class="img-beforewrap">chèn trước câu số
-                            <input type="number" class="img-beforeq" id="imgq-3" min="1" placeholder="vd 32"></span>
-                        <input type="file" id="imgfile-3" accept="image/*" hidden onchange="onImg(3,this)">
-                        <div class="img-preview" id="imgprev-3"></div>
-                    </div>
-                </div>
-            </div>
+            <div class="field-label"><i class="fa-solid fa-image"></i> <span class="vi-label">Hình minh hoạ<span class="en-label">Illustrations</span></span> <span class="opt-chip">tuỳ chọn</span></div>
+            <div class="field-hint">Chỉ cần ghi hình này minh hoạ cho câu mấy đến câu mấy &mdash; công cụ tự biết hình thuộc bài đọc nào. (Just say which questions the image covers &mdash; the tool figures out the right passage automatically.)</div>
+            <div class="img-rows" id="imgRows"></div>
+            <button type="button" class="img-add-btn" id="imgAddBtn" onclick="addImageRow()"><i class="fa-solid fa-plus"></i> Thêm hình</button>
         </div>
 
         <div class="console-wrap">
-            <div class="field-label"><i class="fa-solid fa-terminal"></i> Machine Status</div>
+            <div class="field-label"><i class="fa-solid fa-terminal"></i> <span class="vi-label">Trạng thái<span class="en-label">Machine Status</span></span></div>
             <div class="console" id="console">
-                <div class="log-line">System ready &middot; Pick a test source (paste a real test, or let the AI write one), choose how many passages, then click a level button.</div>
+                <div class="log-line">Sẵn sàng, bấm chọn một trình độ bên dưới, chill ngụm nước, ăn miếng bánh trong lúc đợi hệ thống xử lý bạn nha... 🥰</div>
             </div>
         </div>
 
@@ -446,7 +359,7 @@
                         <rect x="29" y="2"  width="9" height="26" rx="2" fill="rgba(255,255,255,0.16)"/>
                     </svg>
                     <div class="btn-label">PRE-IELTS</div>
-                    <div class="btn-sub">Simplify vocabulary &minus;25%</div>
+                    <div class="btn-sub">Từ vựng đơn giản hoá &minus;25%</div>
                 </div>
             </button>
 
@@ -460,7 +373,7 @@
                         <rect x="29" y="2"  width="9" height="26" rx="2" fill="rgba(255,255,255,0.22)"/>
                     </svg>
                     <div class="btn-label">FUNDAMENTAL</div>
-                    <div class="btn-sub">Simplify vocabulary &minus;15%</div>
+                    <div class="btn-sub">Từ vựng đơn giản hoá &minus;15%</div>
                 </div>
             </button>
 
@@ -474,7 +387,7 @@
                         <rect x="29" y="2"  width="9" height="26" rx="2" fill="white"/>
                     </svg>
                     <div class="btn-label">CORE IELTS</div>
-                    <div class="btn-sub">Original academic text</div>
+                    <div class="btn-sub">Giữ nguyên văn phong học thuật</div>
                 </div>
             </button>
         </div>
@@ -889,45 +802,16 @@
         return parseJSON(text);   // dự phòng: mô hình vẫn trả JSON kiểu cũ
     }
 
-    // Effort applies to the question-writing/solving call. Sonnet 5 defaults to
-    // 'high'; medium is the documented cost step-down and is plenty for setting
-    // items against a passage that is already sitting in the prompt.
-    var QUESTION_EFFORT = 'medium';
+    // Effort is fixed to 'low' (Economy) — this tool no longer exposes a
+    // reasoning-effort selector; the user asked to simplify the tool so
+    // there's one less decision to make. If accuracy issues ever surface,
+    // the fix is a code change here, not a runtime toggle.
+    var QUESTION_EFFORT = 'low';
 
-    function setEffort(e) {
-        QUESTION_EFFORT = e;
-        var bs = document.querySelectorAll('.count-btn[data-e]');
-        for (var i = 0; i < bs.length; i++) {
-            bs[i].classList.toggle('active', bs[i].getAttribute('data-e') === e);
-        }
-        log('Question-solving effort set to ' + e.toUpperCase() +
-            (e === 'low' ? ' \u2014 cheapest and fastest; read the answer key before class.' :
-             e === 'high' ? ' \u2014 most reliable answer key, highest token spend.' :
-                            ' \u2014 balanced default.'));
-    }
-
-    var PASSAGE_COUNT = 1;
-
-    function setCount(n) {
-        PASSAGE_COUNT = n;
-        var cbs = document.querySelectorAll('.count-btn[data-n]');
-        for (var i = 0; i < cbs.length; i++) {
-            cbs[i].classList.toggle('active', parseInt(cbs[i].getAttribute('data-n'), 10) === n);
-        }
-        for (var p = 1; p <= 3; p++) {
-            document.getElementById('block-' + p).classList.toggle('hidden', p > n);
-        }
-        // Lay the visible blocks out as n columns and widen the page to suit.
-        var wrap = document.getElementById('psgBlocks');
-        var cont = document.querySelector('.container');
-        ['cols-1', 'cols-2', 'cols-3'].forEach(function(c) {
-            wrap.classList.remove(c);
-            cont.classList.remove(c);
-        });
-        wrap.classList.add('cols-' + n);
-        cont.classList.add('cols-' + n);
-        log('Test length set to ' + n + ' passage' + (n > 1 ? 's' : '') + ' \u00b7 ' + (n * 20) + ' minutes.');
-    }
+    // Always a full 3-passage / 40-question test — the person can still
+    // attempt just one passage inside the exported file itself, so there's
+    // no need to choose a shorter test length at generation time.
+    var PASSAGE_COUNT = 3;
 
     /* =====================================================================
        AUTHOR MODE  (v10.0)
@@ -953,21 +837,15 @@
         document.getElementById('authorOpts').classList.toggle('hidden-soft', m !== 'author');
         document.getElementById('histPanel').classList.toggle('hidden-soft', m !== 'author');
 
-        for (var p = 1; p <= 3; p++) {
-            var lab = document.getElementById('inlabel-' + p);
-            var ta  = document.getElementById('input-' + p);
-            if (m === 'author') {
-                lab.innerHTML = '<i class="fa-solid fa-lightbulb"></i> Passage ' + p + ' &mdash; Topic / Brief <span style="font-weight:500;opacity:.7">(optional)</span>';
-                ta.placeholder = 'Bỏ trống \u2192 AI tự chọn chủ đề học thuật ngẫu nhiên.\n\nHoặc ghi yêu cầu, ví dụ:\n"the decline of bee populations \u2014 contrast two research teams"\n"lịch sử kênh đào Panama, nhiều mốc thời gian và số liệu"';
-            } else {
-                lab.innerHTML = '<i class="fa-solid fa-file-lines"></i> Passage ' + p + ' &mdash; Text + Questions';
-                ta.placeholder = 'Paste passage ' + p + ' and its questions here\u2026';
-            }
-        }
+        // Convert mode: the whole-test paste/upload box is the only input.
+        // Author mode: needs no input at all — the AI picks its own topics
+        // and writes and solves everything from scratch.
+        document.getElementById('quickPasteGroup').classList.toggle('hidden-soft', m !== 'convert');
+
         if (m === 'author') {
-            log('AUTHOR mode \u00b7 AI vi\u1ebft \u0111\u1ec1 g\u1ed1c. Ch\u1ec9 c\u1ea7n ch\u1ecdn s\u1ed1 passage v\u00e0 b\u1ea5m m\u1ed9t n\u00fat tr\u00ecnh \u0111\u1ed9.', 'ok');
+            log('AUTHOR mode \u00b7 AI vi\u1ebft \u0111\u1ec1 g\u1ed1c \u2014 3 b\u00e0i, 40 c\u00e2u, t\u1ef1 ch\u1ecdn ch\u1ee7 \u0111\u1ec1. Ch\u1ec9 c\u1ea7n b\u1ea5m m\u1ed9t n\u00fat tr\u00ecnh \u0111\u1ed9.', 'ok');
         } else {
-            log('CONVERT mode \u00b7 d\u00e1n \u0111\u1ec1 c\u00f3 s\u1eb5n v\u00e0o t\u1eebng \u00f4 nh\u01b0 c\u0169.');
+            log('CONVERT mode \u00b7 d\u00e1n ho\u1eb7c t\u1ea3i l\u00ean to\u00e0n b\u1ed9 \u0111\u1ec1, r\u1ed3i b\u1ea5m m\u1ed9t n\u00fat tr\u00ecnh \u0111\u1ed9.');
         }
     }
 
@@ -1218,6 +1096,99 @@
         return { answers: plain, explanations: plain.map(function() { return ''; }) };
     }
 
+    // ---- Whole-test auto-split -----------------------------------------
+    // Takes one big paste (or uploaded .md) containing all passages, their
+    // questions, and an answer key, and splits it into the per-passage
+    // boxes this tool already knows how to process — so the teacher never
+    // has to manually copy sections apart. Understands the template this
+    // conversation has used throughout:
+    //   ## PASSAGE 1: Title
+    //   ...passage text + ## QUESTIONS 1-13...
+    //   ## PASSAGE 2: Title
+    //   ...
+    //   ## ANSWER KEY
+    //   Passage 1 (Questions 1-13): 1-TRUE: because... 2-FALSE: because...
+    //   Passage 2 (Questions 14-26): ...
+    // Every header is tolerant of a missing "##" and of "Passage" vs
+    // "PASSAGE", matching the same tolerant style as parseAnswerKeyCombined.
+    function splitFullTestText(raw) {
+        var text = String(raw || '').replace(/\r\n?/g, '\n');
+
+        // Find each "PASSAGE N" header (with or without "##", with or
+        // without a title after the colon) and the "ANSWER KEY" header.
+        var passageRe = /^#{0,2}\s*PASSAGE\s*([123])\s*:?\s*(.*)$/gim;
+        var found = [], m;
+        while ((m = passageRe.exec(text)) !== null) {
+            found.push({ n: parseInt(m[1], 10), title: m[2].trim().replace(/\*+$/, ''), at: m.index, lineEnd: passageRe.lastIndex });
+        }
+        found.sort(function(a, b) { return a.at - b.at; });
+        // De-duplicate: keep only the first header found for each passage
+        // number (a passage's own title might mention "Passage 2" in prose).
+        var seen = {}, passages = [];
+        found.forEach(function(f) { if (!seen[f.n]) { seen[f.n] = true; passages.push(f); } });
+        passages.sort(function(a, b) { return a.n - b.n; });
+
+        if (!passages.length) {
+            return { ok: false, error: 'Kh\u00f4ng t\u00ecm th\u1ea5y ti\u00eau \u0111\u1ec1 "PASSAGE 1" trong n\u1ed9i dung d\u00e1n v\u00e0o \u2014 ki\u1ec3m tra l\u1ea1i \u0111\u1ecb\u1ecbnh d\u1ea1ng.' };
+        }
+
+        var keyIdx = text.search(/^#{0,2}\s*ANSWER\s*KEY\b/im);
+
+        // Body of each passage = from right after its header line to the
+        // start of the next passage header (or ANSWER KEY, or end of text).
+        var bodies = {};
+        passages.forEach(function(p, i) {
+            var next = passages[i + 1];
+            var end = next ? next.at : (keyIdx >= 0 ? keyIdx : text.length);
+            bodies[p.n] = text.slice(p.lineEnd, end).trim();
+        });
+
+        // Answer key: split on "Passage N (...)" markers within the
+        // ANSWER KEY section, same tolerant style as elsewhere in this tool.
+        var keyChunks = {};
+        if (keyIdx >= 0) {
+            var keySection = text.slice(keyIdx);
+            var keyPassageRe = /Passage\s*([123])\s*\([^)]*\)\s*:?\s*\*{0,2}\s*/gi;
+            var starts = [], km;
+            while ((km = keyPassageRe.exec(keySection)) !== null) {
+                starts.push({ n: parseInt(km[1], 10), end: keyPassageRe.lastIndex, at: km.index });
+            }
+            starts.forEach(function(s, i) {
+                var next = starts[i + 1];
+                keyChunks[s.n] = keySection.slice(s.end, next ? next.at : keySection.length)
+                    .trim().replace(/^\*+\s*/, '').replace(/\*+\s*$/, '').trim();
+            });
+        }
+
+        return { ok: true, passages: passages, bodies: bodies, keyChunks: keyChunks };
+    }
+
+    // File upload just loads the text — the actual split happens
+    // automatically inside buildTest() when a level button is clicked, so
+    // there's no separate "split" step to run here. A quick preview count
+    // is shown immediately so a bad paste is obvious before spending tokens.
+    function onQuickPasteFile(input) {
+        var f = input.files && input.files[0];
+        if (!f) return;
+        var r = new FileReader();
+        r.onload = function() {
+            document.getElementById('qpText').value = r.result;
+            previewQuickPaste();
+        };
+        r.readAsText(f);
+        input.value = '';
+    }
+
+    function previewQuickPaste() {
+        var status = document.getElementById('qpStatus');
+        var result = splitFullTestText(document.getElementById('qpText').value);
+        if (!status) return;
+        if (!result.ok) { status.className = 'qp-status'; status.textContent = ''; return; }
+        var names = result.passages.map(function(p) { return 'B\u00e0i ' + p.n; }).join(', ');
+        status.className = 'qp-status ok';
+        status.textContent = '\u2713 Nh\u1eadn di\u1ec7n \u0111\u01b0\u1ee3c: ' + names + '. B\u1ea5m m\u1ed9t tr\u00ecnh \u0111\u1ed9 b\u00ean d\u01b0\u1edbi \u0111\u1ec3 t\u1ea1o \u0111\u1ec1.';
+    }
+
     // Builds the {qN: [answer]} / {qN: "text"} objects using the SAME
     // sequential id scheme (q<start+i>) the prompt instructs the model to
     // use for its <input>/<select> "name" attributes when known answers are
@@ -1446,19 +1417,45 @@
         }
 
         var blocks = [];
-        for (var i = 1; i <= PASSAGE_COUNT; i++) {
-            var body = document.getElementById('input-' + i).value.trim();
-            if (TEST_MODE === 'convert' && !body) {
-                log('Error: Passage ' + i + ' is empty. Paste its text and questions.', 'err'); return;
+        var status = document.getElementById('qpStatus');
+
+        if (TEST_MODE === 'convert') {
+            // Auto-split the whole-test paste right here, at generate time —
+            // no separate "split" step for the teacher to remember.
+            var raw = document.getElementById('qpText').value;
+            var split = splitFullTestText(raw);
+            if (!split.ok) {
+                if (status) { status.className = 'qp-status err'; status.textContent = '\u2717 ' + split.error; }
+                log('Error: ' + split.error, 'err');
+                return;
             }
-            blocks.push({ title: document.getElementById('ptitle-' + i).value.trim(), body: body });
+            if (split.passages.length < 3) {
+                var msg = 'Ch\u1ec9 t\u00ecm th\u1ea5y ' + split.passages.length + ' b\u00e0i \u0111\u1ecdc (c\u1ea7n \u0111\u1ee7 3) \u2014 ki\u1ec3m tra l\u1ea1i n\u1ed9i dung d\u00e1n v\u00e0o.';
+                if (status) { status.className = 'qp-status err'; status.textContent = '\u2717 ' + msg; }
+                log('Error: ' + msg, 'err');
+                return;
+            }
+            var filled = [];
+            split.passages.forEach(function(p) {
+                var keyChunk = split.keyChunks[p.n] || '';
+                var qCount = keyChunk ? parseAnswerKeyCombined(keyChunk).answers.length : 0;
+                filled.push('B\u00e0i ' + p.n + (qCount ? ' (' + qCount + ' c\u00e2u)' : ' (ch\u01b0a th\u1ea5y \u0111\u00e1p \u00e1n)'));
+                blocks.push({ title: p.title || '', body: split.bodies[p.n] || '', answersRaw: keyChunk });
+            });
+            if (status) { status.className = 'qp-status ok'; status.textContent = '\u2713 \u0110\u00e3 t\u00e1ch: ' + filled.join(', ') + '.'; }
+            log('T\u1ef1 \u0111\u1ed9ng t\u00e1ch \u0111\u1ec1 \u00b7 ' + filled.join(', ') + '.', 'ok');
+        } else {
+            // Author mode needs no input at all — the AI picks its own
+            // topics (the empty body is the existing signal for that) and
+            // avoids repeats via the topic-memory history.
+            for (var i = 1; i <= PASSAGE_COUNT; i++) {
+                blocks.push({ title: '', body: '' });
+            }
         }
 
         var btns      = document.querySelectorAll('.gen-btn');
-        var countBtns = document.querySelectorAll('.count-btn');
         var activeBtn = document.getElementById('btn-' + level);
         btns.forEach(function(b) { b.disabled = true; });
-        countBtns.forEach(function(b) { b.disabled = true; });
         activeBtn.classList.add('loading');
         log('Building ' + level.toUpperCase() + ' test \u00b7 ' + PASSAGE_COUNT + ' passage' + (PASSAGE_COUNT > 1 ? 's' : '') + '\u2026');
 
@@ -1493,8 +1490,7 @@
                         explanations: qs.explanations
                     };
                 } else {
-                    var knownAnsRaw = document.getElementById('answers-' + (p + 1)) ? document.getElementById('answers-' + (p + 1)).value : '';
-                    data = await generatePassage(level, blocks[p].body, nextNum, knownAnsRaw);
+                    data = await generatePassage(level, blocks[p].body, nextNum, blocks[p].answersRaw || '');
                 }
 
                 var fixed = renumber(data.questions, data.answers, data.explanations, nextNum);
@@ -1541,7 +1537,6 @@
             log('ERROR: ' + e.message, 'err');
         } finally {
             btns.forEach(function(b) { b.disabled = false; });
-            countBtns.forEach(function(b) { b.disabled = false; });
             activeBtn.classList.remove('loading');
         }
     }
@@ -1646,12 +1641,41 @@
         return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
-    // ===== Ảnh minh hoạ theo passage =====
-    var PASSAGE_IMAGES = {};   // { passageIndex: dataURI }
+    // ===== Ảnh minh hoạ — quản lý theo khoảng câu hỏi (toàn đề, không theo passage) =====
+    // The teacher just says "this image covers questions X to Y"; at export
+    // time we look at each passage's final {first, last} question range and
+    // route the image to whichever passage actually contains X. No need to
+    // know in advance which passage box a given image belongs to.
+    // Start with one empty row already showing — for the common case (0 or
+    // 1 diagram) this means the file picker is right there immediately,
+    // no "add a row first" click needed. An untouched empty row (no file
+    // chosen) is simply ignored at export time, so this is harmless even
+    // if the teacher never uses it.
+    var IMAGE_ENTRIES = [{ id: 1, dataURI: null, fromQ: null, toQ: null }];
+    var imgEntrySeq = 1;
 
-    function pickImg(n) { document.getElementById('imgfile-' + n).click(); }
+    function addImageRow() {
+        var id = ++imgEntrySeq;
+        IMAGE_ENTRIES.push({ id: id, dataURI: null, fromQ: null, toQ: null });
+        renderImageRows();
+    }
 
-    function onImg(n, input) {
+    function removeImageRow(id) {
+        IMAGE_ENTRIES = IMAGE_ENTRIES.filter(function(e) { return e.id !== id; });
+        renderImageRows();
+    }
+
+    function updateImageRange(id, field, val) {
+        var e = IMAGE_ENTRIES.find(function(e) { return e.id === id; });
+        if (e) e[field] = val ? parseInt(val, 10) : null;
+    }
+
+    function pickImageFile(id) {
+        var input = document.getElementById('imgfile-row-' + id);
+        if (input) input.click();
+    }
+
+    function onImageFile(id, input) {
         var f = input.files && input.files[0];
         if (!f) return;
         if (!/^image\//.test(f.type)) { alert('Vui lòng chọn một file ảnh.'); input.value = ''; return; }
@@ -1666,25 +1690,48 @@
                 ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);
                 ctx.drawImage(img, 0, 0, w, h);
                 var data = c.toDataURL('image/png');
-                PASSAGE_IMAGES[n] = data;
-                var kb = Math.round(data.length * 0.75 / 1024);
-                var prev = document.getElementById('imgprev-' + n);
-                prev.className = 'img-preview has';
-                prev.innerHTML = '<img src="' + data + '" alt="preview">' +
-                    '<span class="img-name">~' + kb + ' KB</span>' +
-                    '<button type="button" class="img-rm" onclick="removeImg(' + n + ')">Gỡ ảnh</button>';
+                var e = IMAGE_ENTRIES.find(function(e) { return e.id === id; });
+                if (e) e.dataURI = data;
+                renderImageRows();
             };
             img.src = r.result;
         };
         r.readAsDataURL(f);
     }
 
-    function removeImg(n) {
-        delete PASSAGE_IMAGES[n];
-        document.getElementById('imgfile-' + n).value = '';
-        var prev = document.getElementById('imgprev-' + n);
-        prev.className = 'img-preview'; prev.innerHTML = '';
+    function renderImageRows() {
+        var wrap = document.getElementById('imgRows');
+        wrap.innerHTML = IMAGE_ENTRIES.map(function(e) {
+            var previewHTML = e.dataURI
+                ? '<div class="img-preview has"><img src="' + e.dataURI + '" alt="preview">' +
+                  '<span class="img-name">\u0111\u00e3 t\u1ea3i l\u00ean</span></div>'
+                : '';
+            return '<div class="img-row">' +
+                '<div class="img-attach">' +
+                '<button type="button" class="img-pick" onclick="pickImageFile(' + e.id + ')"><i class="fa-solid fa-upload"></i> ' +
+                (e.dataURI ? 'Đổi file ảnh này' : 'Tải file ảnh lên') + '</button>' +
+                '<input type="file" id="imgfile-row-' + e.id + '" accept="image/*" hidden onchange="onImageFile(' + e.id + ',this)">' +
+                '<span class="img-range-inputs">áp dụng cho câu ' +
+                '<input type="number" min="1" value="' + (e.fromQ || '') + '" placeholder="vd 21" onchange="updateImageRange(' + e.id + ',\'fromQ\',this.value)">' +
+                ' đến ' +
+                '<input type="number" min="1" value="' + (e.toQ || '') + '" placeholder="vd 25" onchange="updateImageRange(' + e.id + ',\'toQ\',this.value)">' +
+                '</span>' +
+                '<button type="button" class="img-pick" style="border-color:#dc2626;color:#dc2626;" onclick="removeImageRow(' + e.id + ')"><i class="fa-solid fa-trash"></i> Xoá hình này</button>' +
+                previewHTML +
+                '</div></div>';
+        }).join('') || '<div style="font-size:0.8rem;color:var(--text-sub);padding:4px 0;">Chưa có hình nào &mdash; bấm nút bên dưới nếu đề có sơ đồ/bản đồ cần minh hoạ.</div>';
+
+        // Button label makes the relationship to the rows above explicit:
+        // "Tải file ảnh lên" fills in an EXISTING row's file; this button
+        // creates a brand-new row, for a DIFFERENT diagram/question range.
+        var addBtn = document.getElementById('imgAddBtn');
+        if (addBtn) {
+            addBtn.innerHTML = IMAGE_ENTRIES.length
+                ? '<i class="fa-solid fa-plus"></i> Thêm hình khác (nếu đề có nhiều sơ đồ)'
+                : '<i class="fa-solid fa-plus"></i> Thêm hình';
+        }
     }
+    renderImageRows();
 
     function exportFile(title, passages, level) {
         var labels = { pre: 'Pre-IELTS', fund: 'Fundamental', core: 'Core IELTS' };
@@ -1704,15 +1751,22 @@
         var metaJSON         = JSON.stringify(meta).replace(/<\/script>/gi, '<\\/script>');
         var plabelsJSON      = JSON.stringify(labelsByP).replace(/<\/script>/gi, '<\\/script>');
 
-        // Ảnh minh hoạ: gắn với câu số (global). Chèn bằng DOM khi mở đề.
+        // Ảnh minh hoạ: mỗi ảnh khai báo "câu X đến câu Y" (toàn đề, không
+        // theo passage cụ thể) — ở đây ta tự tìm passage nào có [first,last]
+        // chứa số câu bắt đầu (fromQ) và gắn ảnh vào đúng passage đó.
         var IMAGES = [];
-        passages.forEach(function(p, i) {
-            var src = PASSAGE_IMAGES[i + 1];
-            if (!src) return;
-            var el = document.getElementById('imgq-' + (i + 1));
-            var bq = el ? parseInt(el.value, 10) : NaN;
-            if (!bq || bq < p.first || bq > p.last) bq = p.first;  // đảm bảo nằm trong passage
-            IMAGES.push({ p: i + 1, q: bq, src: src });
+        IMAGE_ENTRIES.forEach(function(e) {
+            if (!e.dataURI || !e.fromQ) return;
+            var target = null;
+            for (var i = 0; i < passages.length; i++) {
+                var p = passages[i];
+                if (e.fromQ >= p.first && e.fromQ <= p.last) { target = i + 1; break; }
+            }
+            if (!target) {
+                log('Hình minh hoạ cho câu ' + e.fromQ + ' không khớp v\u1edbi b\u00e0i \u0111\u1ecdc n\u00e0o \u2014 \u0111\u00e3 b\u1ecf qua.', 'warn');
+                return;
+            }
+            IMAGES.push({ p: target, q: e.fromQ, toQ: e.toQ || null, src: e.dataURI });
         });
         var imagesJSON = JSON.stringify(IMAGES).replace(/<\/script>/gi, '<\\/script>');
         var safeTitle        = title.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -1832,6 +1886,7 @@
 '        .finish-dock { display: flex; align-items: center; gap: 8px; }\n' +
 '        .psg-figure { margin: 20px 0; text-align: center; }\n' +
 '        .psg-figure img { max-width: 100%; height: auto; border: 1px solid #e5e7eb; border-radius: 10px; background: #fff; }\n' +
+'        .fig-caption { font-size: 0.78rem; font-weight: 700; color: #64748b; margin-bottom: 6px; }\n' +
 '        .q-figset { margin: 16px 0; padding: 14px 16px; border: 1px solid #e5e7eb; border-radius: 12px; background: #fafafa; }\n' +
 '        .q-fighint { font-size: 0.82rem; font-weight: 700; color: #475569; margin-bottom: 10px; }\n' +
 '        .q-figrow { display: flex; align-items: center; gap: 10px; margin: 8px 0; }\n' +
@@ -1936,9 +1991,10 @@
 '                      letter-spacing: 1.2px; }\n' +
 '        .band-num { font-size: 2.3rem; font-weight: 800; color: var(--gg); line-height: 1.1; margin: 2px 0 3px; }\n' +
 '        .band-note { font-size: 0.64rem; color: #94a3b8; font-weight: 600; }\n' +
-'        .band-caveat { font-size: 0.68rem; color: #b45309; background: #fffbeb; border: 1px solid #fcd34d;\n' +
-'                       border-radius: 7px; padding: 7px 12px; margin: 11px auto 0; max-width: 430px;\n' +
-'                       font-weight: 600; line-height: 1.5; }\n' +
+'        .band-caveat { font-size: 0.82rem; color: #92400e; background: #fffbeb; border: 2px solid #f59e0b;\n' +
+'                       border-radius: 9px; padding: 12px 16px; margin: 14px auto 0; max-width: 480px;\n' +
+'                       font-weight: 700; line-height: 1.6; text-align: left; }\n' +
+'        .band-caveat i { margin-right: 6px; }\n' +
 '        .score-break { display: flex; gap: 8px; justify-content: center; margin-top: 14px; flex-wrap: wrap; }\n' +
 '        .score-pill { background: white; border: 1px solid var(--border); border-radius: 8px;\n' +
 '                      padding: 6px 13px; font-size: 0.78rem; font-weight: 700; color: #475569; }\n' +
@@ -2103,6 +2159,12 @@ tabsHTML + '\n' +
 '            if (input) { node = input; while (node.parentNode && node.parentNode !== qs) node = node.parentNode; }\n' +
 '            var fig = document.createElement("div");\n' +
 '            fig.className = "psg-figure";\n' +
+'            if (im.toQ && im.toQ !== im.q) {\n' +
+'                var cap = document.createElement("div");\n' +
+'                cap.className = "fig-caption";\n' +
+'                cap.textContent = "Minh h\\u1ecda cho c\\u00e2u " + im.q + "\\u2013" + im.toQ;\n' +
+'                fig.appendChild(cap);\n' +
+'            }\n' +
 '            var im2 = document.createElement("img");\n' +
 '            im2.alt = "figure"; im2.src = im.src;\n' +
 '            fig.appendChild(im2);\n' +
@@ -2308,8 +2370,9 @@ tabsHTML + '\n' +
 '        var scaleNote = (total === 40)\n' +
 '            ? "IELTS Academic Reading"\n' +
 '            : "scaled from " + total + " questions to the 40-question scale";\n' +
-'        var levelNote = (LEVEL === "core") ? ""\n' +
-'            : \'<div class="band-caveat">Passages simplified to \' + LEVEL_LABEL + \' level \\u2014 band is indicative, not exam-equivalent.</div>\';\n' +
+'        var levelNote = (LEVEL === "core")\n' +
+'            ? \'<div class="band-caveat"><i class="fa-solid fa-triangle-exclamation"></i>L\\u01b0u \\u00fd: \\u0110i\\u1ec3m band n\\u00e0y ch\\u1ec9 mang t\\u00ednh tham kh\\u1ea3o t\\u1eeb c\\u00f4ng c\\u1ee5 n\\u1ed9i b\\u1ed9, KH\\u00d4NG ph\\u1ea3n \\u00e1nh k\\u1ebft qu\\u1ea3 thi IELTS th\\u1eadt. \\u0110\\u1ec3 bi\\u1ebft \\u0111i\\u1ec3m ch\\u00ednh x\\u00e1c, h\\u00e3y l\\u00e0m \\u0111\\u1ec1 thi ch\\u00ednh th\\u1ee9c (Cambridge, IDP, British Council...).</div>\'\n' +
+'            : \'<div class="band-caveat"><i class="fa-solid fa-triangle-exclamation"></i>L\\u01b0u \\u00fd: \\u0110\\u1ec1 n\\u00e0y \\u0111\\u00e3 \\u0111\\u01a1n gi\\u1ea3n ho\\u00e1 t\\u1eeb \\u0111\\u1ec1 thi g\\u1ed1c (m\\u1ee9c \' + LEVEL_LABEL + \'), n\\u00ean \\u0111i\\u1ec3m band \\u1edf \\u0111\\u00e2y CH\\u1ec8 mang t\\u00ednh tham kh\\u1ea3o, KH\\u00d4NG t\\u01b0\\u01a1ng \\u0111\\u01b0\\u01a1ng v\\u1edbi \\u0111\\u1ec1 thi IELTS th\\u1eadt.</div>\';\n' +
 '        var bandHTML =\n' +
 '            \'<div class="band-box">\' +\n' +
 '              \'<div class="band-label">Estimated Band</div>\' +\n' +
