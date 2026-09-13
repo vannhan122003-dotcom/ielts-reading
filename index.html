@@ -322,7 +322,7 @@
 
 
         <div class="field-group" id="quickPasteGroup">
-            <div class="field-label"><i class="fa-solid fa-bolt"></i> <span class="vi-label">Dán / Tải lên toàn bộ đề (3 bài)<span class="en-label">Paste or upload the whole test (3 passages)</span></span></div>
+            <div class="field-label"><i class="fa-solid fa-bolt"></i> <span class="vi-label">Dán / Tải lên đề (1\u20133 bài)<span class="en-label">Paste or upload the test (1\u20133 passages)</span></span></div>
             <div class="quickpaste-box">
                 <div class="quickpaste-row">
                     <button type="button" class="qp-upload-btn" onclick="document.getElementById('qpFile').click()">
@@ -330,7 +330,7 @@
                     </button>
                     <input type="file" id="qpFile" accept=".md,.markdown,.txt,.docx" hidden onchange="onQuickPasteFile(this)">
                 </div>
-                <textarea id="qpText" oninput="previewQuickPaste()" placeholder="Dán toàn bộ đề vào đây: cả 3 bài đọc, câu hỏi, và đáp án + giải thích. Công cụ sẽ tự nhận diện từng bài khi bạn bấm một trình độ bên dưới.&#10;&#10;(Paste the whole test here — all 3 passages, questions, and answer key + explanations. The tool auto-detects each passage when you click a level button below.)" style="height:220px;"></textarea>
+                <textarea id="qpText" oninput="previewQuickPaste()" placeholder="Dán đề vào đây: 1, 2 hoặc 3 bài đọc (đánh dấu PASSAGE 1 / PASSAGE 2 / PASSAGE 3), câu hỏi, và đáp án + giải thích. Công cụ sẽ tự nhận diện số bài khi bạn bấm một trình độ bên dưới.&#10;&#10;(Paste the test here — 1, 2, or 3 passages, questions, and answer key + explanations. The tool auto-detects how many passages you gave when you click a level button below.)" style="height:220px;"></textarea>
                 <div class="qp-status" id="qpStatus"></div>
             </div>
         </div>
@@ -1490,6 +1490,7 @@
 
         var blocks = [];
         var status = document.getElementById('qpStatus');
+        var thisCount = PASSAGE_COUNT; // author mode always uses the fixed 3; convert mode below overrides this to match what was actually pasted
 
         if (TEST_MODE === 'convert') {
             // Auto-split the whole-test paste right here, at generate time —
@@ -1501,12 +1502,10 @@
                 log('Error: ' + split.error, 'err');
                 return;
             }
-            if (split.passages.length < 3) {
-                var msg = 'Ch\u1ec9 t\u00ecm th\u1ea5y ' + split.passages.length + ' b\u00e0i \u0111\u1ecdc (c\u1ea7n \u0111\u1ee7 3) \u2014 ki\u1ec3m tra l\u1ea1i n\u1ed9i dung d\u00e1n v\u00e0o.';
-                if (status) { status.className = 'qp-status err'; status.textContent = '\u2717 ' + msg; }
-                log('Error: ' + msg, 'err');
-                return;
-            }
+            // Accept 1, 2, or 3 passages — whatever was actually pasted/uploaded.
+            // splitFullTestText only ever matches headers "PASSAGE 1/2/3", so
+            // this is naturally capped at 3 already.
+            thisCount = split.passages.length;
             var filled = [];
             split.passages.forEach(function(p) {
                 var keyChunk = split.keyChunks[p.n] || '';
@@ -1529,20 +1528,20 @@
         var activeBtn = document.getElementById('btn-' + level);
         btns.forEach(function(b) { b.disabled = true; });
         activeBtn.classList.add('loading');
-        log('Building ' + level.toUpperCase() + ' test \u00b7 ' + PASSAGE_COUNT + ' passage' + (PASSAGE_COUNT > 1 ? 's' : '') + '\u2026');
+        log('Building ' + level.toUpperCase() + ' test \u00b7 ' + thisCount + ' passage' + (thisCount > 1 ? 's' : '') + '\u2026');
 
         try {
             var results = [], nextNum = 1;
-            var split = qSplit(PASSAGE_COUNT), usedTopics = [], authored = null;
+            var split = qSplit(thisCount), usedTopics = [], authored = null;
 
             for (var p = 0; p < blocks.length; p++) {
-                log('Passage ' + (p + 1) + '/' + PASSAGE_COUNT + ' \u2014 generating, questions start at ' + nextNum + '\u2026');
+                log('Passage ' + (p + 1) + '/' + thisCount + ' \u2014 generating, questions start at ' + nextNum + '\u2026');
 
                 var data;
                 if (TEST_MODE === 'author') {
                     var want = split[p];
                     log('Passage ' + (p + 1) + ' \u00b7 step 1/2 \u2014 writing an original ' + SHAPE[level][Math.min(p, 2)].w + '-word passage\u2026');
-                    authored = await authorPassage(level, blocks[p].body, p, PASSAGE_COUNT, usedTopics);
+                    authored = await authorPassage(level, blocks[p].body, p, thisCount, usedTopics);
                     usedTopics.push(authored.topic);
                     if (authored.title) usedTopics.push(authored.title);
                     log('Passage ' + (p + 1) + ' \u00b7 "' + (authored.title || 'untitled') + '" \u2014 ' + authored.words + ' words written.', 'ok');
@@ -1603,7 +1602,7 @@
 
             log('Packaging student file\u2026');
             exportFile(testTitle, results, level);
-            log('SUCCESS \u2014 ' + (nextNum - 1) + ' questions across ' + PASSAGE_COUNT + ' passage' + (PASSAGE_COUNT > 1 ? 's' : '') + '. File downloaded.', 'ok');
+            log('SUCCESS \u2014 ' + (nextNum - 1) + ' questions across ' + thisCount + ' passage' + (thisCount > 1 ? 's' : '') + '. File downloaded.', 'ok');
 
         } catch (e) {
             log('ERROR: ' + e.message, 'err');
@@ -2185,7 +2184,7 @@ tabsHTML + '\n' +
 '<div class="confirm-mask" id="confirmMask">\n' +
 '    <div class="confirm-box">\n' +
 '        <div class="confirm-title">Hoàn thành sớm?</div>\n' +
-'        <div class="confirm-text">Bạn có chắc muốn nộp bài và chấm điểm ngay bây giờ? Sau khi chấm, bạn sẽ <b>không thể tiếp tục làm bài</b> ở cả 3 passage.</div>\n' +
+'        <div class="confirm-text">B\u1ea1n c\u00f3 ch\u1eafc mu\u1ed1n n\u1ed9p b\u00e0i v\u00e0 ch\u1ea5m \u0111i\u1ec3m ngay b\u00e2y gi\u1edd? Sau khi ch\u1ea5m, b\u1ea1n s\u1ebd <b>kh\u00f4ng th\u1ec3 ti\u1ebfp t\u1ee5c l\u00e0m b\u00e0i</b> \u1edf ' + (nP > 1 ? 'c\u1ea3 ' + nP + ' passage' : 'passage n\u00e0y') + '.</div>\n' +
 '        <div class="confirm-actions">\n' +
 '            <button type="button" class="confirm-cancel" onclick="closeConfirm()">Tiếp tục làm bài</button>\n' +
 '            <button type="button" class="confirm-ok" onclick="doFinish()">Hoàn thành &amp; chấm</button>\n' +
