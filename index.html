@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GG IELTS Reading Architect v11.0 - GG Languages Academy</title>
+    <title>GG IELTS Reading Architect v11.1 - GG Languages Academy</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -257,7 +257,7 @@
     <header class="app-header">
         <img src="https://1drv.ms/i/c/cf90a27d1e2d64dd/IQSj_4BbUuwwTaAK8FBiFwC8AWjhNghEL4u78fASnBpZR9g?width=65&height=74" alt="GG Logo" class="logo-img">
         <div class="app-title">
-            <h1>GG IELTS READING ARCHITECT <span class="version-chip">v11.0</span></h1>
+            <h1>GG IELTS READING ARCHITECT <span class="version-chip">v11.1</span></h1>
             <div class="sub">Edited by Mr. Nhân &middot; 0984 351 477</div>
         </div>
         <button type="button" class="key-orb" id="keyOrb" onclick="toggleKeyForm()" title="API key"></button>
@@ -1053,7 +1053,7 @@
         // otherwise the "X-Y" question-range itself looks like a valid
         // "number-answer" pair to the regex below and corrupts the first entry.
         text = text.replace(/^[\s\S]*?\(\s*Questions?[^)]*\)\s*:?\**\s*/i, '');
-        var pairRe = /(\d+)\s*-\s*([^,\n]+?)(?=\s*(?:,|\n)\s*\d+\s*-|\s*$)/g;
+        var pairRe = /(\d+)\s*[.\-)]\s*([^,\n]+?)(?=\s*(?:,|\n)\s*\d+\s*[.\-)]|\s*$)/g;
         var pairs = [], m;
         while ((m = pairRe.exec(text)) !== null) {
             var ans = m[2].trim().replace(/\*+$/, '').trim();
@@ -1074,7 +1074,11 @@
         text = String(text || '');
         text = text.replace(/^[\s\S]*?\(\s*Questions?[^)]*\)\s*:?\**\s*/i, '');
 
-        var starts = [], startRe = /(\d+)\s*-\s*([^:\n]+?)\s*:\s*/g, m;
+        // Tolerates "1-TRUE:" (original expected format), "1. TRUE:", and
+        // "**1. TRUE** — explanation" (bold-wrapped number+answer, em-dash
+        // or en-dash instead of a colon) — different models format this
+        // differently and all three are common in practice.
+        var starts = [], startRe = /\*{0,2}(\d+)\s*[.\-)]\s*([^*:\n—–]+?)\*{0,2}\s*(?::|—|–)\s*/g, m;
         while ((m = startRe.exec(text)) !== null) {
             starts.push({ num: parseInt(m[1], 10), ans: m[2].trim(), end: startRe.lastIndex, at: m.index });
         }
@@ -1116,12 +1120,34 @@
         var text = String(raw || '').replace(/\r\n?/g, '\n');
 
         // Find each "PASSAGE N" header (with or without "##", with or
-        // without a title after the colon) and the "ANSWER KEY" header.
-        var passageRe = /^#{0,2}\s*PASSAGE\s*([123])\s*:?\s*(.*)$/gim;
+        // without "READING" before it, with or without a title after the
+        // colon) and the "ANSWER KEY" header. Tolerates "# READING PASSAGE 1"
+        // as well as the canonical "## PASSAGE 1: Title" — different models
+        // phrase this header differently and both are common in practice.
+        // [ \t]* (not \s*) on purpose: \s also matches newlines, which was
+        // greedily skipping blank lines and grabbing the *next* heading line
+        // as if it were inline title text on the PASSAGE line itself.
+        var passageRe = /^#{0,2}[ \t]*(?:READING[ \t]+)?PASSAGE[ \t]*([123])[ \t]*:?[ \t]*(.*)$/gim;
         var found = [], m;
         while ((m = passageRe.exec(text)) !== null) {
             found.push({ n: parseInt(m[1], 10), title: m[2].trim().replace(/\*+$/, ''), at: m.index, lineEnd: passageRe.lastIndex });
         }
+        // If a passage header carried no title (e.g. "# READING PASSAGE 1"
+        // with the actual title on the next line as its own heading, like
+        // "## Lighthouses and Their Keepers"), pull that next line in as the
+        // title and advance lineEnd past it so it isn't duplicated in the body.
+        found.forEach(function(f) {
+            if (f.title) return;
+            var rest = text.slice(f.lineEnd);
+            var blank = rest.match(/^\n+/);
+            var skipLen = blank ? blank[0].length : 0;
+            var firstLine = rest.slice(skipLen).split('\n')[0];
+            var headingMatch = firstLine.match(/^#{1,3}\s*(.+?)\s*$/);
+            if (headingMatch) {
+                f.title = headingMatch[1].trim();
+                f.lineEnd += skipLen + firstLine.length;
+            }
+        });
         found.sort(function(a, b) { return a.at - b.at; });
         // De-duplicate: keep only the first header found for each passage
         // number (a passage's own title might mention "Passage 2" in prose).
@@ -1149,13 +1175,26 @@
         var keyChunks = {};
         if (keyIdx >= 0) {
             var keySection = text.slice(keyIdx);
-            var keyPassageRe = /Passage\s*([123])\s*\([^)]*\)\s*:?\s*\*{0,2}\s*/gi;
+            // Tolerates "Passage 1 (Questions 1-13):" (original expected
+            // format) as well as a bare markdown heading "### Passage 1"
+            // with no question range — models often drop the parenthetical
+            // when they format the answer key as headings instead of prose.
+            // Anchored to line start (^ with 'm') so a closing summary line
+            // like "...Passage 1 is within 450-620; Passage 2 is longer
+            // than Passage 1..." doesn't get mistaken for real section
+            // headers — those mentions are mid-sentence, not line-initial.
+            var keyPassageRe = /^#{0,3}\s*\*{0,2}\s*Passage\s*([123])\s*(?:\([^)]*\))?\s*:?\s*\*{0,2}\s*/gim;
             var starts = [], km;
             while ((km = keyPassageRe.exec(keySection)) !== null) {
                 starts.push({ n: parseInt(km[1], 10), end: keyPassageRe.lastIndex, at: km.index });
             }
-            starts.forEach(function(s, i) {
-                var next = starts[i + 1];
+            // Keep only the FIRST header found per passage number, same
+            // defensive dedup as the main passage-header parsing above —
+            // a later, spurious match must never overwrite the real chunk.
+            var keySeen = {}, dedupedStarts = [];
+            starts.forEach(function(s) { if (!keySeen[s.n]) { keySeen[s.n] = true; dedupedStarts.push(s); } });
+            dedupedStarts.forEach(function(s, i) {
+                var next = dedupedStarts[i + 1];
                 keyChunks[s.n] = keySection.slice(s.end, next ? next.at : keySection.length)
                     .trim().replace(/^\*+\s*/, '').replace(/\*+\s*$/, '').trim();
             });
