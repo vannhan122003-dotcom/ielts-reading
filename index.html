@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GG IELTS Reading Architect v11.2 - GG Languages Academy</title>
+    <title>GG IELTS Reading Architect v11.1 - GG Languages Academy</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         :root {
             --brand-primary: #1e4620; --brand-accent: #2e7d32; --brand-light: #e8f5e9;
@@ -258,7 +257,7 @@
     <header class="app-header">
         <img src="https://1drv.ms/i/c/cf90a27d1e2d64dd/IQSj_4BbUuwwTaAK8FBiFwC8AWjhNghEL4u78fASnBpZR9g?width=65&height=74" alt="GG Logo" class="logo-img">
         <div class="app-title">
-            <h1>GG IELTS READING ARCHITECT <span class="version-chip">v11.2</span></h1>
+            <h1>GG IELTS READING ARCHITECT <span class="version-chip">v11.1</span></h1>
             <div class="sub">Edited by Mr. Nhân &middot; 0984 351 477</div>
         </div>
         <button type="button" class="key-orb" id="keyOrb" onclick="toggleKeyForm()" title="API key"></button>
@@ -327,11 +326,10 @@
             <div class="quickpaste-box">
                 <div class="quickpaste-row">
                     <button type="button" class="qp-upload-btn" onclick="document.getElementById('qpFile').click()">
-                        <i class="fa-solid fa-file-arrow-up"></i> Tải lên file .md/.txt/.docx hoặc .zip (nhiều đề)
+                        <i class="fa-solid fa-file-arrow-up"></i> Tải lên file .md/.txt/.docx
                     </button>
-                    <input type="file" id="qpFile" accept=".md,.markdown,.txt,.docx,.zip" hidden onchange="onQuickPasteFile(this)">
+                    <input type="file" id="qpFile" accept=".md,.markdown,.txt,.docx" hidden onchange="onQuickPasteFile(this)">
                 </div>
-                <div class="field-hint" style="margin-top:4px;">Tải lên một file <b>.zip</b> chứa nhiều đề (.md/.txt/.docx) để xử lý hàng loạt &mdash; mỗi đề trong zip sẽ được tách và tải về thành 1 file riêng khi bạn bấm một trình độ bên dưới. (Upload a <b>.zip</b> of several test files to batch-process them &mdash; each one is converted and downloaded as its own file.)</div>
                 <textarea id="qpText" oninput="previewQuickPaste()" placeholder="Dán đề vào đây: 1, 2 hoặc 3 bài đọc (đánh dấu PASSAGE 1 / PASSAGE 2 / PASSAGE 3), câu hỏi, và đáp án + giải thích. Công cụ sẽ tự nhận diện số bài khi bạn bấm một trình độ bên dưới.&#10;&#10;(Paste the test here — 1, 2, or 3 passages, questions, and answer key + explanations. The tool auto-detects how many passages you gave when you click a level button below.)" style="height:220px;"></textarea>
                 <div class="qp-status" id="qpStatus"></div>
             </div>
@@ -816,11 +814,6 @@
     // no need to choose a shorter test length at generation time.
     var PASSAGE_COUNT = 3;
 
-    // Zip-batch queue (v11.2). Populated by onQuickPasteFile() when a .zip
-    // with more than one test file is uploaded; buildTest() then loops over
-    // it instead of reading the single qpText box. Empty in every other flow.
-    var BATCH_QUEUE = [];
-
     /* =====================================================================
        AUTHOR MODE  (v10.0)
        ---------------------------------------------------------------------
@@ -1264,83 +1257,10 @@
         return lines.join('\n\n');
     }
 
-    // Reads one .md/.txt/.docx entry out of an open JSZip file and returns
-    // its content as plain text/markdown, running it through the same
-    // docx->markdown conversion used for a standalone .docx upload.
-    async function readZipEntryAsText(name, entry) {
-        if (/\.docx$/i.test(name)) {
-            if (typeof mammoth === 'undefined') throw new Error('Thư viện đọc .docx chưa tải được.');
-            var ab = await entry.async('arraybuffer');
-            var result = await mammoth.convertToHtml({ arrayBuffer: ab });
-            return docxHtmlToMarkdown(result.value);
-        }
-        return entry.async('string');
-    }
-
-    async function onQuickPasteZip(f, status) {
-        BATCH_QUEUE = [];
-        if (typeof JSZip === 'undefined') {
-            if (status) { status.className = 'qp-status err'; status.textContent = '✗ Thư viện đọc .zip chưa tải được — kiểm tra kết nối mạng rồi thử lại.';}
-            return;
-        }
-        try {
-            if (status) { status.className = 'qp-status'; status.textContent = '⏳ Đang giải nén file .zip…'; }
-            var buf = await f.arrayBuffer();
-            var zip = await JSZip.loadAsync(buf);
-            var names = Object.keys(zip.files).filter(function(n) {
-                var base = n.split('/').pop();
-                return /\.(md|markdown|txt|docx)$/i.test(n) &&
-                       !zip.files[n].dir &&
-                       base && base.charAt(0) !== '.' &&
-                       n.indexOf('__MACOSX') === -1;
-            }).sort();
-
-            if (!names.length) {
-                if (status) { status.className = 'qp-status err'; status.textContent = '✗ File .zip không chứa file .md/.txt/.docx nào.'; }
-                return;
-            }
-
-            for (var i = 0; i < names.length; i++) {
-                var name = names[i];
-                var text = await readZipEntryAsText(name, zip.files[name]);
-                BATCH_QUEUE.push({ name: name.split('/').pop(), text: text });
-            }
-
-            if (BATCH_QUEUE.length === 1) {
-                // Only one test inside the zip — no reason to force the batch
-                // path, just behave like a normal single-file upload.
-                document.getElementById('qpText').value = BATCH_QUEUE[0].text;
-                BATCH_QUEUE = [];
-                previewQuickPaste();
-                return;
-            }
-
-            document.getElementById('qpText').value = '';
-            var names2 = BATCH_QUEUE.map(function(e) { return e.name; }).join(', ');
-            if (status) {
-                status.className = 'qp-status ok';
-                status.textContent = '✓ Đã nạp ' + BATCH_QUEUE.length + ' đề từ ZIP: ' + names2 +
-                    '. Bấm một trình độ bên dưới để xử lý lần lượt — mỗi đề sẽ tải về 1 file riêng.';
-            }
-            log('Đã nạp ' + BATCH_QUEUE.length + ' đề từ ZIP (' + names2 + '), sẵn sàng xử lý hàng loạt.', 'ok');
-        } catch (err) {
-            BATCH_QUEUE = [];
-            if (status) { status.className = 'qp-status err'; status.textContent = '✗ Không đọc được file .zip: ' + err.message; }
-        }
-    }
-
     async function onQuickPasteFile(input) {
         var f = input.files && input.files[0];
         if (!f) return;
         var status = document.getElementById('qpStatus');
-
-        if (/\.zip$/i.test(f.name)) {
-            await onQuickPasteZip(f, status);
-            input.value = '';
-            return;
-        }
-
-        BATCH_QUEUE = []; // a plain single-file upload replaces any pending zip batch
 
         if (/\.docx$/i.test(f.name)) {
             if (typeof mammoth === 'undefined') {
@@ -1372,9 +1292,6 @@
 
     function previewQuickPaste() {
         var status = document.getElementById('qpStatus');
-        // Manual typing/pasting overrides any zip batch loaded earlier —
-        // only onQuickPasteZip() is allowed to populate BATCH_QUEUE.
-        BATCH_QUEUE = [];
         var result = splitFullTestText(document.getElementById('qpText').value);
         if (!status) return;
         if (!result.ok) { status.className = 'qp-status'; status.textContent = ''; return; }
@@ -1603,12 +1520,6 @@
         return { questions: questions, answers: answers, explanations: exps };
     }
 
-    // Top-level entry point for both level buttons. Decides whether this is
-    // a single test (normal paste/upload \u2014 the pre-v11.2 behaviour) or a
-    // zip batch (BATCH_QUEUE has more than one entry), and owns the button
-    // disable/spinner state for the whole run either way. The actual
-    // per-test generation work lives in runSingleTest() below so it can be
-    // called once per file in a batch.
     async function buildTest(level) {
         if (!getKey()) {
             log('Error: No API key saved. Add your key at the top of the page first.', 'err');
@@ -1616,66 +1527,21 @@
             return;
         }
 
-        var btns      = document.querySelectorAll('.gen-btn');
-        var activeBtn = document.getElementById('btn-' + level);
-        btns.forEach(function(b) { b.disabled = true; });
-        activeBtn.classList.add('loading');
-
-        try {
-            if (TEST_MODE === 'convert' && BATCH_QUEUE.length > 1) {
-                var queue = BATCH_QUEUE.slice(); // snapshot \u2014 a mid-batch re-upload can't corrupt an in-flight run
-                var okCount = 0, failCount = 0;
-                log('B\u1eaft \u0111\u1ea7u x\u1eed l\u00fd h\u00e0ng lo\u1ea1t \u00b7 ' + queue.length + ' \u0111\u1ec1 t\u1eeb file ZIP\u2026');
-                for (var b = 0; b < queue.length; b++) {
-                    var item = queue[b];
-                    log('\u2014 File ' + (b + 1) + '/' + queue.length + ': ' + item.name + ' \u2014');
-                    try {
-                        await runSingleTest(level, item.text, item.name.replace(/\.[^.]+$/, ''));
-                        okCount++;
-                    } catch (e) {
-                        failCount++;
-                        log('B\u1ecf qua "' + item.name + '": ' + e.message, 'err');
-                    }
-                    if (b < queue.length - 1) await sleep(900);
-                }
-                log('HO\u00c0N T\u1ea4T L\u00d4 \u00b7 ' + okCount + '/' + queue.length + ' \u0111\u1ec1 th\u00e0nh c\u00f4ng' +
-                    (failCount ? ', ' + failCount + ' l\u1ed7i (xem log \u1edf tr\u00ean)' : '') + '. ' + okCount + ' file \u0111\u00e3 t\u1ea3i v\u1ec1.',
-                    failCount ? 'warn' : 'ok');
-            } else {
-                var raw = TEST_MODE === 'convert' ? document.getElementById('qpText').value : '';
-                await runSingleTest(level, raw, null);
-            }
-        } catch (e) {
-            log('ERROR: ' + e.message, 'err');
-        } finally {
-            btns.forEach(function(b) { b.disabled = false; });
-            activeBtn.classList.remove('loading');
-        }
-    }
-
-    // Generates and downloads exactly one test file. `rawText` is the full
-    // pasted/uploaded test text (convert mode only \u2014 ignored in author
-    // mode); `fileLabel` is the source filename without its extension, used
-    // to name the downloaded file distinctly during a zip batch, or null
-    // for the normal single-test flow (falls back to the fixed academy
-    // title, matching pre-v11.2 behaviour). Throws on failure \u2014 the caller
-    // decides whether that aborts the whole run (single test) or is logged
-    // and skipped so the rest of the batch keeps going.
-    async function runSingleTest(level, rawText, fileLabel) {
         var blocks = [];
         var status = document.getElementById('qpStatus');
         var thisCount = PASSAGE_COUNT; // author mode always uses the fixed 3; convert mode below overrides this to match what was actually pasted
 
         if (TEST_MODE === 'convert') {
-            // Auto-split the whole-test paste right here, at generate time \u2014
+            // Auto-split the whole-test paste right here, at generate time —
             // no separate "split" step for the teacher to remember.
-            var raw = rawText;
+            var raw = document.getElementById('qpText').value;
             var split = splitFullTestText(raw);
             if (!split.ok) {
                 if (status) { status.className = 'qp-status err'; status.textContent = '\u2717 ' + split.error; }
-                throw new Error(split.error);
+                log('Error: ' + split.error, 'err');
+                return;
             }
-            // Accept 1, 2, or 3 passages \u2014 whatever was actually pasted/uploaded.
+            // Accept 1, 2, or 3 passages — whatever was actually pasted/uploaded.
             // splitFullTestText only ever matches headers "PASSAGE 1/2/3", so
             // this is naturally capped at 3 already.
             thisCount = split.passages.length;
@@ -1687,9 +1553,9 @@
                 blocks.push({ title: p.title || '', body: split.bodies[p.n] || '', answersRaw: keyChunk });
             });
             if (status) { status.className = 'qp-status ok'; status.textContent = '\u2713 \u0110\u00e3 t\u00e1ch: ' + filled.join(', ') + '.'; }
-            log((fileLabel ? fileLabel + ' \u00b7 ' : '') + 'T\u1ef1 \u0111\u1ed9ng t\u00e1ch \u0111\u1ec1 \u00b7 ' + filled.join(', ') + '.', 'ok');
+            log('T\u1ef1 \u0111\u1ed9ng t\u00e1ch \u0111\u1ec1 \u00b7 ' + filled.join(', ') + '.', 'ok');
         } else {
-            // Author mode needs no input at all \u2014 the AI picks its own
+            // Author mode needs no input at all — the AI picks its own
             // topics (the empty body is the existing signal for that) and
             // avoids repeats via the topic-memory history.
             for (var i = 1; i <= PASSAGE_COUNT; i++) {
@@ -1697,80 +1563,92 @@
             }
         }
 
+        var btns      = document.querySelectorAll('.gen-btn');
+        var activeBtn = document.getElementById('btn-' + level);
+        btns.forEach(function(b) { b.disabled = true; });
+        activeBtn.classList.add('loading');
         log('Building ' + level.toUpperCase() + ' test \u00b7 ' + thisCount + ' passage' + (thisCount > 1 ? 's' : '') + '\u2026');
 
-        var results = [], nextNum = 1;
-        var split = qSplit(thisCount), usedTopics = [], authored = null;
+        try {
+            var results = [], nextNum = 1;
+            var split = qSplit(thisCount), usedTopics = [], authored = null;
 
-        for (var p = 0; p < blocks.length; p++) {
-            log('Passage ' + (p + 1) + '/' + thisCount + ' \u2014 generating, questions start at ' + nextNum + '\u2026');
+            for (var p = 0; p < blocks.length; p++) {
+                log('Passage ' + (p + 1) + '/' + thisCount + ' \u2014 generating, questions start at ' + nextNum + '\u2026');
 
-            var data;
-            if (TEST_MODE === 'author') {
-                var want = split[p];
-                log('Passage ' + (p + 1) + ' \u00b7 step 1/2 \u2014 writing an original ' + SHAPE[level][Math.min(p, 2)].w + '-word passage\u2026');
-                authored = await authorPassage(level, blocks[p].body, p, thisCount, usedTopics);
-                usedTopics.push(authored.topic);
-                if (authored.title) usedTopics.push(authored.title);
-                log('Passage ' + (p + 1) + ' \u00b7 "' + (authored.title || 'untitled') + '" \u2014 ' + authored.words + ' words written.', 'ok');
-                var target = SHAPE[level][Math.min(p, 2)].w;
-                if (authored.words > target * 1.35 || authored.words < target * 0.65) {
-                    log('Passage ' + (p + 1) + ' \u00b7 word count is well off the ' + target + '-word target \u2014 worth a read before you give it to a class.', 'warn');
+                var data;
+                if (TEST_MODE === 'author') {
+                    var want = split[p];
+                    log('Passage ' + (p + 1) + ' \u00b7 step 1/2 \u2014 writing an original ' + SHAPE[level][Math.min(p, 2)].w + '-word passage\u2026');
+                    authored = await authorPassage(level, blocks[p].body, p, thisCount, usedTopics);
+                    usedTopics.push(authored.topic);
+                    if (authored.title) usedTopics.push(authored.title);
+                    log('Passage ' + (p + 1) + ' \u00b7 "' + (authored.title || 'untitled') + '" \u2014 ' + authored.words + ' words written.', 'ok');
+                    var target = SHAPE[level][Math.min(p, 2)].w;
+                    if (authored.words > target * 1.35 || authored.words < target * 0.65) {
+                        log('Passage ' + (p + 1) + ' \u00b7 word count is well off the ' + target + '-word target \u2014 worth a read before you give it to a class.', 'warn');
+                    }
+
+                    await sleep(700);
+                    log('Passage ' + (p + 1) + ' \u00b7 step 2/2 \u2014 writing and solving ' + want + ' questions\u2026');
+                    var qs = await generateQuestions(level, authored.passage, p, nextNum, want);
+                    data = {
+                        title:        authored.title,
+                        passage:      authored.passage,
+                        questions:    qs.questions,
+                        answers:      qs.answers,
+                        explanations: qs.explanations
+                    };
+                } else {
+                    data = await generatePassage(level, blocks[p].body, nextNum, blocks[p].answersRaw || '');
                 }
 
-                await sleep(700);
-                log('Passage ' + (p + 1) + ' \u00b7 step 2/2 \u2014 writing and solving ' + want + ' questions\u2026');
-                var qs = await generateQuestions(level, authored.passage, p, nextNum, want);
-                data = {
-                    title:        authored.title,
-                    passage:      authored.passage,
-                    questions:    qs.questions,
-                    answers:      qs.answers,
-                    explanations: qs.explanations
-                };
-            } else {
-                data = await generatePassage(level, blocks[p].body, nextNum, blocks[p].answersRaw || '');
+                var fixed = renumber(data.questions, data.answers, data.explanations, nextNum);
+                if (!fixed.count) throw new Error('Passage ' + (p + 1) + ': no questions were produced.');
+                if (TEST_MODE === 'author' && fixed.count !== split[p]) {
+                    log('Passage ' + (p + 1) + ' \u00b7 asked for ' + split[p] + ' questions, model produced ' + fixed.count +
+                        ' \u2014 numbering re-sequenced automatically so grading stays correct.', 'warn');
+                }
+
+                var drop = toDropdowns(fixed.questions, fixed.answers);
+                fixed.questions = drop.questions;
+                if (drop.converted) {
+                    log('Passage ' + (p + 1) + ' \u00b7 converted ' + drop.converted + ' T/F/NG answer' +
+                        (drop.converted > 1 ? 's' : '') + ' from typing to dropdown.', 'warn');
+                }
+
+                var ensured = ensureInputs(fixed.questions, fixed.answers);
+                fixed.questions = ensured.questions;
+                if (ensured.added) {
+                    log('Passage ' + (p + 1) + ' \u00b7 tạo thêm ' + ensured.added + ' ô nhập cho câu theo hình (AI không render).', 'warn');
+                }
+
+                results.push({
+                    heading:      blocks[p].title || (data.title || '').trim() || ('Reading Passage ' + (p + 1)),
+                    passage:      data.passage,
+                    questions:    fixed.questions,
+                    answers:      fixed.answers,
+                    explanations: fixed.explanations,
+                    first:        nextNum,
+                    last:         nextNum + fixed.count - 1
+                });
+                log('Passage ' + (p + 1) + ' ready \u00b7 questions ' + nextNum + '\u2013' + (nextNum + fixed.count - 1) + '.', 'ok');
+                nextNum += fixed.count;
+                if (p < blocks.length - 1) await sleep(700);
             }
 
-            var fixed = renumber(data.questions, data.answers, data.explanations, nextNum);
-            if (!fixed.count) throw new Error('Passage ' + (p + 1) + ': no questions were produced.');
-            if (TEST_MODE === 'author' && fixed.count !== split[p]) {
-                log('Passage ' + (p + 1) + ' \u00b7 asked for ' + split[p] + ' questions, model produced ' + fixed.count +
-                    ' \u2014 numbering re-sequenced automatically so grading stays correct.', 'warn');
-            }
+            var testTitle = 'GG Languages Academy - Reading Test';
 
-            var drop = toDropdowns(fixed.questions, fixed.answers);
-            fixed.questions = drop.questions;
-            if (drop.converted) {
-                log('Passage ' + (p + 1) + ' \u00b7 converted ' + drop.converted + ' T/F/NG answer' +
-                    (drop.converted > 1 ? 's' : '') + ' from typing to dropdown.', 'warn');
-            }
+            log('Packaging student file\u2026');
+            exportFile(testTitle, results, level);
+            log('SUCCESS \u2014 ' + (nextNum - 1) + ' questions across ' + thisCount + ' passage' + (thisCount > 1 ? 's' : '') + '. File downloaded.', 'ok');
 
-            var ensured = ensureInputs(fixed.questions, fixed.answers);
-            fixed.questions = ensured.questions;
-            if (ensured.added) {
-                log('Passage ' + (p + 1) + ' \u00b7 t\u1ea1o th\u00eam ' + ensured.added + ' \u00f4 nh\u1eadp cho c\u00e2u theo h\u00ecnh (AI kh\u00f4ng render).', 'warn');
-            }
-
-            results.push({
-                heading:      blocks[p].title || (data.title || '').trim() || ('Reading Passage ' + (p + 1)),
-                passage:      data.passage,
-                questions:    fixed.questions,
-                answers:      fixed.answers,
-                explanations: fixed.explanations,
-                first:        nextNum,
-                last:         nextNum + fixed.count - 1
-            });
-            log('Passage ' + (p + 1) + ' ready \u00b7 questions ' + nextNum + '\u2013' + (nextNum + fixed.count - 1) + '.', 'ok');
-            nextNum += fixed.count;
-            if (p < blocks.length - 1) await sleep(700);
+        } catch (e) {
+            log('ERROR: ' + e.message, 'err');
+        } finally {
+            btns.forEach(function(b) { b.disabled = false; });
+            activeBtn.classList.remove('loading');
         }
-
-        var testTitle = fileLabel || 'GG Languages Academy - Reading Test';
-
-        log('Packaging student file\u2026');
-        exportFile(testTitle, results, level);
-        log('SUCCESS \u2014 ' + (nextNum - 1) + ' questions across ' + thisCount + ' passage' + (thisCount > 1 ? 's' : '') + '. File downloaded.', 'ok');
     }
 
     async function generatePassage(level, input, startNum, knownAnsRaw) {
@@ -2555,7 +2433,7 @@ tabsHTML + '\n' +
 '                var checkedEl = document.querySelector("[name=\\"" + id + "\\"]:checked");\n' +
 '                userAns = checkedEl ? (checkedEl.value || "").trim() : "";\n' +
 '                for (var k = 0; k < els.length; k++) els[k].disabled = true;\n' +
-'                refEl = els[els.length - 1];\n' +
+'                refEl = checkedEl || els[els.length - 1];\n' +
 '            } else {\n' +
 '                userAns = (els[0].value || "").trim();\n' +
 '                els[0].disabled = true;\n' +
